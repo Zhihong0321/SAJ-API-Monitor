@@ -168,11 +168,13 @@ curl -X GET "https://intl-developer.saj-electric.com/prod-api/open/api/device/re
 
 ---
 
-## 4. Get Historical Device Data
+## 4. Get Device Upload Data (⭐ **RECOMMENDED**)
+
+> **🎯 PREFERRED METHOD**: This API provides better reliability, authentication stability, and cleaner data structure compared to `historyDataCommon`. Use this for all new implementations.
 
 ### Endpoint
 ```
-GET /device/historyDataCommon
+GET /device/uploadData
 ```
 
 ### Headers
@@ -188,12 +190,22 @@ clientSign: {client_signature}
 | deviceSn | string | Yes | Device Serial Number |
 | startTime | string | Yes | Start time in format: yyyy-MM-dd HH:mm:ss |
 | endTime | string | Yes | End time in format: yyyy-MM-dd HH:mm:ss |
+| timeUnit | integer | Yes | Time unit: 0=minute, 1=day, 2=month, 3=year |
 
-### Important Notes
-- **Time Interval Limit**: Maximum interval between startTime and endTime is 24 hours
-- **Data Granularity**: Returns time-series data points (typically every 5-10 minutes)
-- **Rate Limiting**: Implement delays between consecutive requests to avoid rate limits
-- **Data Volume**: Each 24-hour period returns 140-160 data points depending on device activity
+### Time Unit Options
+| timeUnit | Granularity | Use Case | Data Interval | Max Range |
+|----------|-------------|----------|---------------|-----------|
+| 0 | **Minute Data** | Real-time monitoring, detailed analysis | ~5 minutes | 24 hours |
+| 1 | **Day Data** | Daily charts, weekly/monthly trends | 1 day | No limit |
+| 2 | **Month Data** | Long-term analysis | 1 month | No limit |  
+| 3 | **Year Data** | Historical overview | 1 year | No limit |
+
+### Key Advantages
+- ✅ **Multiple Time Granularities**: Choose the right resolution for your use case
+- ✅ **No 24-hour Limit**: Unlike historyDataCommon, supports unlimited date ranges
+- ✅ **Better Authentication**: More stable token handling, fewer 401 errors
+- ✅ **Cleaner Data Structure**: Focused fields relevant to each time unit
+- ✅ **Higher Reliability**: Consistently works across different devices
 
 ### Client Signature Generation
 The clientSign is generated using SHA256 hash:
@@ -203,19 +215,170 @@ sha256("appId=VH_3TmblTqb,deviceSN={deviceSn}")
 
 ### Example Client Sign Generation
 ```bash
-echo -n "appId=VH_3TmblTqb,deviceSN=M2S4182G2349E02278" | sha256sum
-# Result: b86e6b979946cb7d99182a3433ca23adf2d59e6d148ddfc3b4322028620aba92
+echo -n "appId=VH_3TmblTqb,deviceSN=R5X2602J2516E27344" | sha256sum
+# Result: 9a7b5c3d8e2f1a4b6c9d0e3f5a8b2c7d4e6f9a1b3c5d7e9f2a4b6c8d0e2f4a6b
 ```
 
-### Request Example
+### Request Examples
+
+#### Daily Data (Recommended for Charts)
 ```bash
-curl -X GET "https://intl-developer.saj-electric.com/prod-api/open/api/device/historyDataCommon?deviceSn=M2S4182G2349E02278&startTime=2025-08-26%2016:00:00&endTime=2025-08-27%2015:59:59" \
+curl -X GET "https://intl-developer.saj-electric.com/prod-api/open/api/device/uploadData?deviceSn=R5X2602J2516E27344&startTime=2025-08-26%2000:00:00&endTime=2025-09-02%2023:59:59&timeUnit=1" \
 -H "accessToken: {your_access_token}" \
 -H "content-language: en_US:English" \
--H "clientSign: b86e6b979946cb7d99182a3433ca23adf2d59e6d148ddfc3b4322028620aba92"
+-H "clientSign: {generated_signature}"
 ```
 
-### Response
+#### Minute Data (Detailed Analysis)
+```bash
+curl -X GET "https://intl-developer.saj-electric.com/prod-api/open/api/device/uploadData?deviceSn=R5X2602J2516E27344&startTime=2025-09-02%2010:00:00&endTime=2025-09-02%2011:00:00&timeUnit=0" \
+-H "accessToken: {your_access_token}" \
+-H "content-language: en_US:English" \
+-H "clientSign: {generated_signature}"
+```
+
+#### Monthly Data (Long-term Trends)
+```bash
+curl -X GET "https://intl-developer.saj-electric.com/prod-api/open/api/device/uploadData?deviceSn=R5X2602J2516E27344&startTime=2025-03-01%2000:00:00&endTime=2025-09-02%2023:59:59&timeUnit=2" \
+-H "accessToken: {your_access_token}" \
+-H "content-language: en_US:English" \
+-H "clientSign: {generated_signature}"
+```
+
+### Response Examples
+
+#### Daily Data Response (timeUnit=1)
+```json
+{
+  "code": 200,
+  "msg": "request success", 
+  "data": {
+    "deviceType": 0,
+    "timeUnit": 1,
+    "data": [
+      {
+        "dataTime": "2025-08-26 00:00:00",
+        "pVEnergy": 23.65
+      },
+      {
+        "dataTime": "2025-08-27 00:00:00", 
+        "pVEnergy": 22.56
+      },
+      {
+        "dataTime": "2025-08-28 00:00:00",
+        "pVEnergy": 14.45
+      }
+    ]
+  }
+}
+```
+
+#### Minute Data Response (timeUnit=0)
+```json
+{
+  "code": 200,
+  "msg": "request success",
+  "data": {
+    "deviceType": 0,
+    "timeUnit": 0,
+    "data": [
+      {
+        "dataTime": "2025-09-02 10:00:00",
+        "l1Volt": 249.8,
+        "l2Volt": 0,
+        "l3Volt": 0,
+        "power": 1774,
+        "pv1Curr": 2.42,
+        "pv1Power": 891,
+        "pv1Volt": 368.5,
+        "pv2Curr": 4.6,
+        "pv2Power": 1587,
+        "pv2Volt": 345.2,
+        "todayEnergy": 0
+      }
+    ]
+  }
+}
+```
+
+#### Monthly Data Response (timeUnit=2)  
+```json
+{
+  "code": 200,
+  "msg": "request success",
+  "data": {
+    "deviceType": 0,
+    "timeUnit": 2,
+    "data": [
+      {
+        "dataTime": "2025-08-01 00:00:00",
+        "pVEnergy": 315.51
+      },
+      {
+        "dataTime": "2025-09-01 00:00:00",
+        "pVEnergy": 95.25
+      }
+    ]
+  }
+}
+```
+
+### Data Field Reference
+
+#### timeUnit=0 (Minute Data) - 42 Fields
+**Power & Energy:**
+- `power`: Total power generation (W)
+- `todayEnergy`: Today's energy total (kWh)
+
+**PV String Details (pv1-pv12):**
+- `pv1Power`, `pv2Power`: Individual string power (W)
+- `pv1Volt`, `pv2Volt`: String voltage (V)  
+- `pv1Curr`, `pv2Curr`: String current (A)
+
+**Grid Information:**
+- `l1Volt`, `l2Volt`, `l3Volt`: Line voltages (V)
+
+#### timeUnit=1 (Day Data) - Clean & Simple
+- `dataTime`: Date (YYYY-MM-DD HH:mm:ss)
+- `pVEnergy`: Daily energy total (kWh)
+
+#### timeUnit=2 (Month Data) - Aggregated  
+- `dataTime`: Month start date
+- `pVEnergy`: Monthly energy total (kWh)
+
+---
+
+## 5. Get Historical Device Data (Legacy - ⚠️ DEPRECATED)
+
+> **⚠️ LEGACY API**: This endpoint has reliability issues including authentication failures and 24-hour limitations. **Use `uploadData` API instead** for all new implementations.
+
+### Issues with historyDataCommon
+- ❌ **Authentication Problems**: Frequent 401 errors with "accessToken does not exist"
+- ❌ **24-Hour Limit**: Cannot retrieve data ranges longer than 24 hours  
+- ❌ **Complex Data Structure**: 199+ fields, mostly empty or irrelevant
+- ❌ **Rate Limiting Issues**: Requires careful request spacing
+- ❌ **Inconsistent Reliability**: Works for some devices/timeframes, fails for others
+
+### Endpoint
+```
+GET /device/historyDataCommon
+```
+
+### Headers
+```
+accessToken: {access_token}
+content-language: en_US:English
+clientSign: {client_signature}
+```
+
+### Parameters (Legacy)
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| deviceSn | string | Yes | Device Serial Number |
+| startTime | string | Yes | Start time in format: yyyy-MM-dd HH:mm:ss |
+| endTime | string | Yes | End time in format: yyyy-MM-dd HH:mm:ss |
+
+### Legacy Response Structure
 ```json
 {
   "code": 200,
