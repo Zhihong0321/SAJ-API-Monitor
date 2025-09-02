@@ -880,4 +880,51 @@ router.get('/devices/:deviceSn/uploadData', async (req, res) => {
   }
 });
 
+// Get current token information from database
+router.get('/saj/token/status', async (req, res) => {
+  try {
+    console.log('🔍 Checking current token status...');
+
+    const client = await getDBClient();
+    await client.connect();
+
+    const tokenResult = await client.query(
+      'SELECT access_token, expires_at, created_at, is_active FROM saj_tokens WHERE is_active = TRUE ORDER BY created_at DESC LIMIT 1'
+    );
+
+    await client.end();
+
+    if (tokenResult.rows.length > 0) {
+      const token = tokenResult.rows[0];
+      const now = new Date();
+      const expiresAt = new Date(token.expires_at);
+      const isExpired = expiresAt <= now;
+
+      res.json({
+        hasToken: true,
+        isActive: token.is_active,
+        isExpired: isExpired,
+        expiresAt: token.expires_at,
+        createdAt: token.created_at,
+        timeUntilExpiry: isExpired ? 0 : Math.floor((expiresAt - now) / 1000), // seconds
+        tokenPreview: token.access_token ? `${token.access_token.substring(0, 20)}...` : null
+      });
+    } else {
+      res.json({
+        hasToken: false,
+        isActive: false,
+        isExpired: true,
+        message: 'No cached token found'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Failed to get token status:', error.message);
+    res.status(500).json({
+      error: 'Failed to get token status',
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;

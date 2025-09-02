@@ -74,7 +74,7 @@ app.get('/device/:deviceSn', (req, res) => {
 });
 
 app.get('/settings', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html')); // Will create settings.html later
+  res.sendFile(path.join(__dirname, 'public', 'settings.html'));
 });
 
 // Debug page for troubleshooting

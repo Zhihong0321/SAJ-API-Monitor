@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <title>Settings - SAJ Solar Monitor</title>
+  <link rel="stylesheet" href="/design-system/styles.css">
+  <style>
+    body {
+      padding-bottom: 80px;
+    }
+
+    .settings-section {
+      background: var(--color-bg-secondary);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      margin-bottom: var(--space-4);
+      border: 1px solid var(--color-bg-tertiary);
+    }
+
+    .settings-section h3 {
+      color: var(--color-text-primary);
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: var(--space-3);
+    }
+
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-3);
+      background: var(--color-bg-primary);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-2);
+      border: 1px solid var(--color-bg-tertiary);
+    }
+
+    .setting-info {
+      flex: 1;
+    }
+
+    .setting-title {
+      font-weight: 500;
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-1);
+    }
+
+    .setting-description {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+    }
+
+    .token-status {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 12px;
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-sm);
+    }
+
+    .token-status.valid {
+      background: var(--color-solar-online);
+      color: white;
+    }
+
+    .token-status.invalid {
+      background: var(--color-solar-alarm);
+      color: white;
+    }
+
+    .token-status.unknown {
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-secondary);
+    }
+
+    .back-button {
+      position: absolute;
+      left: var(--space-4);
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-size: 18px;
+    }
+
+    .loading {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .success-message {
+      background: var(--color-solar-online);
+      color: white;
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-4);
+      display: none;
+    }
+
+    .error-message {
+      background: var(--color-solar-alarm);
+      color: white;
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-4);
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <a href="/" class="back-button">←</a>
+    <h1 class="header-title">⚙️ Settings</h1>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <!-- Messages -->
+    <div id="successMessage" class="success-message">
+      ✅ Token refreshed successfully!
+    </div>
+    <div id="errorMessage" class="error-message">
+      ❌ Failed to refresh token. Please try again.
+    </div>
+
+    <!-- SAJ API Settings -->
+    <section class="settings-section">
+      <h3>🔑 SAJ API Configuration</h3>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-title">Access Token Status</div>
+          <div class="setting-description">Current cached token validity</div>
+        </div>
+        <div id="tokenStatus" class="token-status unknown">
+          <span id="tokenStatusIcon">⏳</span>
+          <span id="tokenStatusText">Checking...</span>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-title">Refresh Access Token</div>
+          <div class="setting-description">Get a new token from SAJ API and update cache</div>
+        </div>
+        <button id="refreshTokenBtn" class="btn btn-primary btn-sm">
+          <span id="refreshTokenIcon">🔄</span>
+          Refresh Token
+        </button>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-title">Token Information</div>
+          <div class="setting-description" id="tokenInfo">Loading token details...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- System Information -->
+    <section class="settings-section">
+      <h3>📊 System Information</h3>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-title">Database Status</div>
+          <div class="setting-description" id="dbStatus">Checking database connection...</div>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-title">API Endpoints</div>
+          <div class="setting-description">SAJ API base URL and status</div>
+        </div>
+        <div class="token-status valid">
+          <span>🌐</span>
+          <span>Connected</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section class="settings-section">
+      <h3>ℹ️ About</h3>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-title">SAJ Solar Monitor</div>
+          <div class="setting-description">Version 1.0.0 - Solar inverter monitoring system</div>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-title">SAJ API Integration</div>
+          <div class="setting-description">Real-time monitoring of SAJ solar inverters</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="/" class="nav-item">
+      <div class="nav-icon">🏠</div>
+      <span>Dashboard</span>
+    </a>
+    <a href="/devices" class="nav-item">
+      <div class="nav-icon">📱</div>
+      <span>Devices</span>
+    </a>
+    <a href="/sync" class="nav-item">
+      <div class="nav-icon">🔄</div>
+      <span>Sync</span>
+    </a>
+    <a href="/settings" class="nav-item nav-item-active">
+      <div class="nav-icon">⚙️</div>
+      <span>Settings</span>
+    </a>
+  </nav>
+
+  <script>
+    // Settings page functionality
+    class SettingsPage {
+      constructor() {
+        this.init();
+      }
+
+      async init() {
+        await this.checkTokenStatus();
+        this.setupEventListeners();
+      }
+
+      setupEventListeners() {
+        const refreshTokenBtn = document.getElementById('refreshTokenBtn');
+        refreshTokenBtn.addEventListener('click', () => this.refreshToken());
+      }
+
+      async checkTokenStatus() {
+        try {
+          // Check if we can access a protected endpoint to test token validity
+          const response = await fetch('/api/devices?limit=1');
+          const statusElement = document.getElementById('tokenStatus');
+          const statusIcon = document.getElementById('tokenStatusIcon');
+          const statusText = document.getElementById('tokenStatusText');
+
+          if (response.ok) {
+            statusElement.className = 'token-status valid';
+            statusIcon.textContent = '✅';
+            statusText.textContent = 'Valid';
+          } else if (response.status === 401) {
+            statusElement.className = 'token-status invalid';
+            statusIcon.textContent = '❌';
+            statusText.textContent = 'Invalid/Expired';
+          } else {
+            statusElement.className = 'token-status unknown';
+            statusIcon.textContent = '⚠️';
+            statusText.textContent = 'Unknown';
+          }
+
+          // Get token information
+          await this.loadTokenInfo();
+
+        } catch (error) {
+          console.error('Failed to check token status:', error);
+          const statusElement = document.getElementById('tokenStatus');
+          const statusIcon = document.getElementById('tokenStatusIcon');
+          const statusText = document.getElementById('tokenStatusText');
+
+          statusElement.className = 'token-status unknown';
+          statusIcon.textContent = '❓';
+          statusText.textContent = 'Check Failed';
+        }
+      }
+
+      async loadTokenInfo() {
+        try {
+          // Get detailed token information from the new endpoint
+          const response = await fetch('/api/saj/token/status');
+          const tokenData = await response.json();
+
+          const tokenInfo = document.getElementById('tokenInfo');
+
+          if (tokenData.hasToken) {
+            const expiryTime = tokenData.timeUntilExpiry;
+            const hours = Math.floor(expiryTime / 3600);
+            const minutes = Math.floor((expiryTime % 3600) / 60);
+
+            if (tokenData.isExpired) {
+              tokenInfo.textContent = `❌ Token expired - needs refresh`;
+            } else {
+              tokenInfo.textContent = `✅ Valid token expires in ${hours}h ${minutes}m (${tokenData.expiresAt})`;
+            }
+          } else {
+            tokenInfo.textContent = '❌ No cached token found';
+          }
+
+          // Check database status
+          const dbStatus = document.getElementById('dbStatus');
+          if (response.ok) {
+            dbStatus.textContent = '✅ Connected to PostgreSQL database';
+          } else {
+            dbStatus.textContent = '❌ Database connection issue';
+          }
+
+        } catch (error) {
+          console.error('Failed to load token info:', error);
+          const tokenInfo = document.getElementById('tokenInfo');
+          tokenInfo.textContent = '❌ Unable to load token information';
+
+          const dbStatus = document.getElementById('dbStatus');
+          dbStatus.textContent = '❌ Database connection failed';
+        }
+      }
+
+      async refreshToken() {
+        const refreshBtn = document.getElementById('refreshTokenBtn');
+        const refreshIcon = document.getElementById('refreshTokenIcon');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+        try {
+          // Hide previous messages
+          successMessage.style.display = 'none';
+          errorMessage.style.display = 'none';
+
+          // Show loading state
+          refreshBtn.disabled = true;
+          refreshIcon.textContent = '⏳';
+          refreshBtn.textContent = 'Refreshing...';
+
+          console.log('🔄 Refreshing SAJ access token...');
+
+          // Call the token refresh endpoint
+          const response = await fetch('/api/saj/token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const tokenData = await response.json();
+            console.log('✅ Token refreshed successfully:', tokenData);
+
+            // Show success message
+            successMessage.style.display = 'block';
+
+            // Update token status
+            await this.checkTokenStatus();
+
+            // Hide success message after 3 seconds
+            setTimeout(() => {
+              successMessage.style.display = 'none';
+            }, 3000);
+
+          } else {
+            throw new Error(`Token refresh failed: ${response.status}`);
+          }
+
+        } catch (error) {
+          console.error('❌ Token refresh failed:', error);
+
+          // Show error message
+          errorMessage.style.display = 'block';
+
+          // Hide error message after 5 seconds
+          setTimeout(() => {
+            errorMessage.style.display = 'none';
+          }, 5000);
+
+        } finally {
+          // Reset button state
+          refreshBtn.disabled = false;
+          refreshIcon.textContent = '🔄';
+          refreshBtn.innerHTML = '<span id="refreshTokenIcon">🔄</span> Refresh Token';
+        }
+      }
+    }
+
+    // Initialize settings page when loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      new SettingsPage();
+    });
+  </script>
+</body>
+</html>
