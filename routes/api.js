@@ -403,33 +403,82 @@ router.get('/devices/:deviceSn/realtime', async (req, res) => {
   try {
     console.log(`📊 Getting real-time data for device: ${deviceSn}`);
 
-    // Get access token first with detailed logging
-    console.log(`🔑 Requesting access token for realtime data`);
-    console.log(`🔧 Using appId: ${SAJ_CONFIG.appId}`);
-    
-    const tokenResponse = await axios.get(`${SAJ_CONFIG.baseUrl}/access_token`, {
-      params: {
-        appId: SAJ_CONFIG.appId,
-        appSecret: SAJ_CONFIG.appSecret
-      },
-      headers: SAJ_CONFIG.headers,
-      timeout: 10000
-    });
+    // Get access token using cached/shared token logic (FIXED: No longer requests new token each time)
+    console.log(`🔑 Getting access token for realtime data (checking cache first)`);
 
-    console.log(`🔑 Token response code: ${tokenResponse.data.code}`);
-    console.log(`🔑 Token response message: ${tokenResponse.data.msg || 'No message'}`);
+    let accessToken = null;
 
-    if (tokenResponse.data.code !== 200) {
-      console.error(`❌ Token request failed:`, tokenResponse.data);
-      throw new Error(`Failed to get access token: ${tokenResponse.data.msg || tokenResponse.data.code}`);
+    try {
+      // First, try to get a valid cached token from database
+      const client = await getDBClient();
+      await client.connect();
+
+      const tokenResult = await client.query(
+        'SELECT access_token, expires_at FROM saj_tokens WHERE is_active = TRUE AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1'
+      );
+
+      await client.end();
+
+      if (tokenResult.rows.length > 0) {
+        accessToken = tokenResult.rows[0].access_token;
+        console.log(`✅ Using cached access token: ${accessToken.substring(0, 20)}...`);
+      }
+    } catch (dbError) {
+      console.log(`⚠️ Database token check failed: ${dbError.message}`);
     }
 
-    const accessToken = tokenResponse.data.data?.access_token;
+    // If no valid cached token, request a new one
     if (!accessToken) {
-      console.error(`❌ No access token in response:`, tokenResponse.data);
-      throw new Error('Access token not found in response');
+      console.log(`🔑 Requesting new access token for realtime data`);
+      console.log(`🔧 Using appId: ${SAJ_CONFIG.appId}`);
+
+      const tokenResponse = await axios.get(`${SAJ_CONFIG.baseUrl}/access_token`, {
+        params: {
+          appId: SAJ_CONFIG.appId,
+          appSecret: SAJ_CONFIG.appSecret
+        },
+        headers: SAJ_CONFIG.headers,
+        timeout: 10000
+      });
+
+      console.log(`🔑 Token response code: ${tokenResponse.data.code}`);
+      console.log(`🔑 Token response message: ${tokenResponse.data.msg || 'No message'}`);
+
+      if (tokenResponse.data.code !== 200) {
+        console.error(`❌ Token request failed:`, tokenResponse.data);
+        throw new Error(`Failed to get access token: ${tokenResponse.data.msg || tokenResponse.data.code}`);
+      }
+
+      const tokenData = tokenResponse.data.data;
+      accessToken = tokenData?.access_token;
+
+      if (!accessToken) {
+        console.error(`❌ No access token in response:`, tokenResponse.data);
+        throw new Error('Access token not found in response');
+      }
+
+      // Store the new token in database for sharing
+      try {
+        const client = await getDBClient();
+        await client.connect();
+
+        // Deactivate old tokens
+        await client.query('UPDATE saj_tokens SET is_active = FALSE WHERE is_active = TRUE');
+
+        // Insert new token
+        const expiresAt = new Date(Date.now() + (tokenData.expires * 1000));
+        await client.query(
+          'INSERT INTO saj_tokens (access_token, expires_at) VALUES ($1, $2)',
+          [accessToken, expiresAt]
+        );
+
+        await client.end();
+        console.log(`✅ New access token obtained and cached: ${accessToken.substring(0, 20)}...`);
+      } catch (dbError) {
+        console.log(`⚠️ Failed to cache token: ${dbError.message}`);
+      }
     }
-    
+
     console.log(`✅ Access token obtained: ${accessToken.substring(0, 20)}...`);
     const clientSign = generateClientSign(deviceSn);
     console.log(`🔐 Generated client signature: ${clientSign.substring(0, 20)}...`);
@@ -452,12 +501,12 @@ router.get('/devices/:deviceSn/realtime', async (req, res) => {
       console.log('✅ Real-time data retrieved');
       res.json(response.data.data);
     } else {
-      // Handle specific SAJ API error codes  
+      // Handle specific SAJ API error codes
       console.log(`❌ SAJ API returned error code: ${response.data.code}, message: ${response.data.msg}`);
-      
+
       let httpStatus = 500;
       let userMessage = response.data.msg || 'Unknown API error';
-      
+
       // Handle specific SAJ API error codes
       if (response.data.code === 200010) {
         httpStatus = 401;
@@ -469,7 +518,7 @@ router.get('/devices/:deviceSn/realtime', async (req, res) => {
         httpStatus = 400;
         userMessage = 'Invalid request parameters';
       }
-      
+
       res.status(httpStatus).json({
         error: 'SAJ API Error',
         message: userMessage,
@@ -500,33 +549,82 @@ router.get('/devices/:deviceSn/historical', async (req, res) => {
     console.log(`📊 Getting historical data for device: ${deviceSn}`);
     console.log(`📅 Date range: ${startTime} to ${endTime}`);
 
-    // Get access token first with detailed logging
-    console.log(`🔑 Requesting access token for historical data`);
-    console.log(`🔧 Using appId: ${SAJ_CONFIG.appId}`);
-    
-    const tokenResponse = await axios.get(`${SAJ_CONFIG.baseUrl}/access_token`, {
-      params: {
-        appId: SAJ_CONFIG.appId,
-        appSecret: SAJ_CONFIG.appSecret
-      },
-      headers: SAJ_CONFIG.headers,
-      timeout: 10000
-    });
+    // Get access token using cached/shared token logic (FIXED: No longer requests new token each time)
+    console.log(`🔑 Getting access token for historical data (checking cache first)`);
 
-    console.log(`🔑 Token response code: ${tokenResponse.data.code}`);
-    console.log(`🔑 Token response message: ${tokenResponse.data.msg || 'No message'}`);
+    let accessToken = null;
 
-    if (tokenResponse.data.code !== 200) {
-      console.error(`❌ Token request failed:`, tokenResponse.data);
-      throw new Error(`Failed to get access token: ${tokenResponse.data.msg || tokenResponse.data.code}`);
+    try {
+      // First, try to get a valid cached token from database
+      const client = await getDBClient();
+      await client.connect();
+
+      const tokenResult = await client.query(
+        'SELECT access_token, expires_at FROM saj_tokens WHERE is_active = TRUE AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1'
+      );
+
+      await client.end();
+
+      if (tokenResult.rows.length > 0) {
+        accessToken = tokenResult.rows[0].access_token;
+        console.log(`✅ Using cached access token: ${accessToken.substring(0, 20)}...`);
+      }
+    } catch (dbError) {
+      console.log(`⚠️ Database token check failed: ${dbError.message}`);
     }
 
-    const accessToken = tokenResponse.data.data?.access_token;
+    // If no valid cached token, request a new one
     if (!accessToken) {
-      console.error(`❌ No access token in response:`, tokenResponse.data);
-      throw new Error('Access token not found in response');
+      console.log(`🔑 Requesting new access token for historical data`);
+      console.log(`🔧 Using appId: ${SAJ_CONFIG.appId}`);
+
+      const tokenResponse = await axios.get(`${SAJ_CONFIG.baseUrl}/access_token`, {
+        params: {
+          appId: SAJ_CONFIG.appId,
+          appSecret: SAJ_CONFIG.appSecret
+        },
+        headers: SAJ_CONFIG.headers,
+        timeout: 10000
+      });
+
+      console.log(`🔑 Token response code: ${tokenResponse.data.code}`);
+      console.log(`🔑 Token response message: ${tokenResponse.data.msg || 'No message'}`);
+
+      if (tokenResponse.data.code !== 200) {
+        console.error(`❌ Token request failed:`, tokenResponse.data);
+        throw new Error(`Failed to get access token: ${tokenResponse.data.msg || tokenResponse.data.code}`);
+      }
+
+      const tokenData = tokenResponse.data.data;
+      accessToken = tokenData?.access_token;
+
+      if (!accessToken) {
+        console.error(`❌ No access token in response:`, tokenResponse.data);
+        throw new Error('Access token not found in response');
+      }
+
+      // Store the new token in database for sharing
+      try {
+        const client = await getDBClient();
+        await client.connect();
+
+        // Deactivate old tokens
+        await client.query('UPDATE saj_tokens SET is_active = FALSE WHERE is_active = TRUE');
+
+        // Insert new token
+        const expiresAt = new Date(Date.now() + (tokenData.expires * 1000));
+        await client.query(
+          'INSERT INTO saj_tokens (access_token, expires_at) VALUES ($1, $2)',
+          [accessToken, expiresAt]
+        );
+
+        await client.end();
+        console.log(`✅ New access token obtained and cached: ${accessToken.substring(0, 20)}...`);
+      } catch (dbError) {
+        console.log(`⚠️ Failed to cache token: ${dbError.message}`);
+      }
     }
-    
+
     console.log(`✅ Access token obtained: ${accessToken.substring(0, 20)}...`);
     const clientSign = generateClientSign(deviceSn);
     console.log(`🔐 Generated client signature: ${clientSign.substring(0, 20)}...`);
@@ -555,10 +653,10 @@ router.get('/devices/:deviceSn/historical', async (req, res) => {
     } else {
       // Handle specific SAJ API error codes
       console.log(`❌ SAJ API returned error code: ${response.data.code}, message: ${response.data.msg}`);
-      
+
       let httpStatus = 500;
       let userMessage = response.data.msg || 'Unknown API error';
-      
+
       // Handle specific SAJ API error codes
       if (response.data.code === 200010) {
         httpStatus = 401;
@@ -570,7 +668,7 @@ router.get('/devices/:deviceSn/historical', async (req, res) => {
         httpStatus = 400;
         userMessage = 'Invalid request parameters';
       }
-      
+
       res.status(httpStatus).json({
         error: 'SAJ API Error',
         message: userMessage,
