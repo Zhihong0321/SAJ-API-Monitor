@@ -454,78 +454,108 @@
           return;
         }
 
-        // Create a proper visual chart with CSS styling
-        let chartHTML = `
-          <div style="padding: 16px; background: #1e293b; border-radius: 8px; margin: 8px 0;">
-            <div style="font-size: 14px; color: #94a3b8; margin-bottom: 16px; text-align: center;">
-              ${title} (${dataPoints.length} data points)
-            </div>
-            <div style="position: relative; height: 200px; margin-bottom: 16px;">
-        `;
-
-        // Sample data points for visualization (max 24 points to avoid overcrowding)
-        const sampleRate = Math.max(1, Math.ceil(dataPoints.length / 24));
-        const sampledPoints = dataPoints.filter((_, index) => index % sampleRate === 0);
-
-        // Create vertical bar chart
-        const barWidth = Math.max(8, Math.min(24, Math.floor(100 / sampledPoints.length)));
+        // Create smooth area chart with SVG (like reference design)
+        const chartWidth = 100; // percentage
+        const chartHeight = 200;
         
-        sampledPoints.forEach((point, index) => {
+        // Sample data points for smooth visualization (max 50 points for smoothness)
+        const sampleRate = Math.max(1, Math.ceil(dataPoints.length / 50));
+        const sampledPoints = dataPoints.filter((_, index) => index % sampleRate === 0);
+        
+        // Generate SVG path for smooth curve
+        let pathData = '';
+        let areaPath = '';
+        const points = sampledPoints.map((point, index) => {
           const power = parseFloat(point.totalPVPower) || 0;
-          const barHeight = Math.max(2, (power / maxPower) * 160); // 160px max height
-          const leftPos = (index * (100 / sampledPoints.length));
-          
-          const time = new Date(point.dataTime);
-          const timeStr = time.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-          });
-
-          chartHTML += `
-            <div style="
-              position: absolute;
-              bottom: 0;
-              left: ${leftPos}%;
-              width: ${barWidth}px;
-              height: ${barHeight}px;
-              background: linear-gradient(to top, #f97316, #facc15);
-              border-radius: 2px 2px 0 0;
-              transition: opacity 0.2s;
-            " 
-            title="${timeStr}: ${power.toFixed(0)}W"></div>
-            
-            <div style="
-              position: absolute;
-              bottom: -20px;
-              left: ${leftPos}%;
-              width: ${barWidth}px;
-              font-size: 8px;
-              color: #64748b;
-              text-align: center;
-              transform: rotate(-45deg);
-              transform-origin: center;
-            ">${timeStr}</div>
-          `;
+          const x = (index / (sampledPoints.length - 1)) * 100; // percentage
+          const y = ((maxPower - power) / maxPower) * 80 + 10; // 10% padding top/bottom
+          return { x, y, power, time: point.dataTime };
         });
 
-        chartHTML += `
+        if (points.length > 0) {
+          // Create smooth curve using quadratic bezier curves
+          pathData = `M ${points[0].x} ${points[0].y}`;
+          areaPath = `M ${points[0].x} 90 L ${points[0].x} ${points[0].y}`;
+          
+          for (let i = 1; i < points.length; i++) {
+            const prevPoint = points[i - 1];
+            const currentPoint = points[i];
+            
+            // Control point for smooth curve (midpoint technique)
+            const cpX = (prevPoint.x + currentPoint.x) / 2;
+            pathData += ` Q ${cpX} ${prevPoint.y} ${currentPoint.x} ${currentPoint.y}`;
+            areaPath += ` Q ${cpX} ${prevPoint.y} ${currentPoint.x} ${currentPoint.y}`;
+          }
+          
+          // Close the area path
+          areaPath += ` L ${points[points.length - 1].x} 90 Z`;
+        }
+
+        let chartHTML = `
+          <div style="padding: 20px; background: #1e293b; border-radius: 12px; margin: 8px 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px; text-align: center; font-weight: 500;">
+              ${title} (${dataPoints.length} data points)
+            </div>
+            
+            <!-- SVG Chart Container -->
+            <div style="position: relative; height: ${chartHeight}px; margin-bottom: 20px; background: #0f172a; border-radius: 8px; padding: 16px;">
+              <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="overflow: visible;">
+                <!-- Grid lines (optional) -->
+                <defs>
+                  <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.8" />
+                    <stop offset="50%" style="stop-color:#1d4ed8;stop-opacity:0.4" />
+                    <stop offset="100%" style="stop-color:#1e40af;stop-opacity:0.1" />
+                  </linearGradient>
+                </defs>
+                
+                <!-- Area fill -->
+                ${areaPath ? `<path d="${areaPath}" fill="url(#areaGradient)" />` : ''}
+                
+                <!-- Line stroke -->
+                ${pathData ? `<path d="${pathData}" fill="none" stroke="#3b82f6" stroke-width="0.5" />` : ''}
+                
+                <!-- Data points (dots) -->
+                ${points.map(point => `
+                  <circle cx="${point.x}" cy="${point.y}" r="0.3" fill="#60a5fa" opacity="0.8">
+                    <title>${new Date(point.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}: ${point.power.toFixed(0)}W</title>
+                  </circle>
+                `).join('')}
+              </svg>
+              
+              <!-- Time labels -->
+              <div style="position: absolute; bottom: -25px; left: 0; right: 0; display: flex; justify-content: space-between;">
+                ${points.filter((_, i) => i % Math.max(1, Math.floor(points.length / 6)) === 0).map(point => `
+                  <span style="font-size: 10px; color: #64748b; transform: translateX(-50%);">
+                    ${new Date(point.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </span>
+                `).join('')}
+              </div>
             </div>
             
             <!-- Chart Summary -->
             <div style="
               border-top: 1px solid #334155; 
-              padding-top: 12px; 
-              font-size: 12px; 
-              color: #94a3b8;
+              padding-top: 16px; 
+              font-size: 13px; 
+              color: #cbd5e1;
               display: flex;
               justify-content: space-between;
               flex-wrap: wrap;
-              gap: 8px;
+              gap: 12px;
             ">
-              <span><strong style="color: #facc15;">Peak:</strong> ${maxPower.toFixed(0)}W</span>
-              <span><strong style="color: #facc15;">Avg:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.totalPVPower) || 0), 0) / dataPoints.length).toFixed(0)}W</span>
-              <span><strong style="color: #facc15;">Energy:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.todayPvEnergy) || 0), 0)).toFixed(2)}kWh</span>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%;"></div>
+                <span><strong>Peak:</strong> ${maxPower.toFixed(0)}W</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 8px; height: 8px; background: #1d4ed8; border-radius: 50%;"></div>
+                <span><strong>Avg:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.totalPVPower) || 0), 0) / dataPoints.length).toFixed(0)}W</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 8px; height: 8px; background: #60a5fa; border-radius: 50%;"></div>
+                <span><strong>Energy:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.todayPvEnergy) || 0), 0)).toFixed(2)}kWh</span>
+              </div>
             </div>
           </div>
         `;
