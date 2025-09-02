@@ -323,7 +323,7 @@
 
       async loadYesterdayChart() {
         try {
-          // Get yesterday's date for daily data (timeUnit=1)
+          // Get yesterday's date range for hourly data
           const yesterday = new Date();
           yesterday.setDate(yesterday.getDate() - 1);
           yesterday.setHours(0, 0, 0, 0); // Start of yesterday
@@ -336,20 +336,20 @@
 
           console.log(`📊 Loading yesterday chart: ${startTime} to ${endTime}`);
 
-          // Use NEW uploadData API with timeUnit=1 (daily data)
-          const response = await fetch(`/api/devices/${this.deviceSn}/uploadData?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&timeUnit=1`);
+          // Use historyDataCommon API for detailed hourly data (as per SAJ documentation)
+          const response = await fetch(`/api/devices/${this.deviceSn}/historical?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`);
 
           if (response.ok) {
             const data = await response.json();
-            console.log('✅ Yesterday uploadData loaded:', data);
-            
-            // Transform uploadData format to match chart expectations
-            const transformedData = this.transformUploadData(data, 'daily');
-            this.renderChart('yesterdayChart', transformedData, 'Yesterday\'s Generation');
+            console.log('✅ Yesterday historical data loaded:', data);
+
+            // Transform historical data format to match chart expectations
+            const transformedData = this.transformHistoricalData(data, 'hourly');
+            this.renderHourlyChart('yesterdayChart', transformedData, 'Yesterday\'s Hourly Generation');
             document.getElementById('yesterdayPeriod').textContent = yesterday.toLocaleDateString();
           } else {
             const errorText = await response.text();
-            console.error('❌ Yesterday uploadData API error:', response.status, errorText);
+            console.error('❌ Yesterday historical API error:', response.status, errorText);
             this.showChartError('yesterdayChart', `Failed to load yesterday's data (${response.status})`);
           }
         } catch (error) {
@@ -368,33 +368,21 @@
           startDate.setDate(endDate.getDate() - 7);
           startDate.setHours(0, 0, 0, 0); // Start of 7 days ago
 
-          // Use local time formatting instead of ISO (UTC) to match yesterday chart
-          const startTime = startDate.getFullYear() + '-' + 
-            String(startDate.getMonth() + 1).padStart(2, '0') + '-' + 
-            String(startDate.getDate()).padStart(2, '0') + ' ' +
-            String(startDate.getHours()).padStart(2, '0') + ':' +
-            String(startDate.getMinutes()).padStart(2, '0') + ':' +
-            String(startDate.getSeconds()).padStart(2, '0');
-          
-          const endTime = endDate.getFullYear() + '-' + 
-            String(endDate.getMonth() + 1).padStart(2, '0') + '-' + 
-            String(endDate.getDate()).padStart(2, '0') + ' ' +
-            String(endDate.getHours()).padStart(2, '0') + ':' +
-            String(endDate.getMinutes()).padStart(2, '0') + ':' +
-            String(endDate.getSeconds()).padStart(2, '0');
+          const startTime = startDate.toISOString().slice(0, 19).replace('T', ' ');
+          const endTime = endDate.toISOString().slice(0, 19).replace('T', ' ');
 
           console.log(`📊 Loading 7-day chart: ${startTime} to ${endTime}`);
 
-          // Use NEW uploadData API with timeUnit=1 (daily data)
+          // Use uploadData API with timeUnit=1 (daily data) - CORRECT for 7-day chart
           const response = await fetch(`/api/devices/${this.deviceSn}/uploadData?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&timeUnit=1`);
 
           if (response.ok) {
             const data = await response.json();
             console.log('✅ 7-day uploadData loaded:', data);
-            
+
             // Transform uploadData format to match chart expectations
-            const transformedData = this.transformUploadData(data, 'weekly');
-            this.renderChart('weekChart', transformedData, '7-Day Generation Trend');
+            const transformedData = this.transformUploadData(data, 'daily');
+            this.renderDailyChart('weekChart', transformedData, '7-Day Generation Trend');
             document.getElementById('weekPeriod').textContent = `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
           } else {
             const errorText = await response.text();
@@ -417,33 +405,21 @@
           startDate.setDate(endDate.getDate() - 30);
           startDate.setHours(0, 0, 0, 0); // Start of 30 days ago
 
-          // Use local time formatting instead of ISO (UTC) to match yesterday chart
-          const startTime = startDate.getFullYear() + '-' + 
-            String(startDate.getMonth() + 1).padStart(2, '0') + '-' + 
-            String(startDate.getDate()).padStart(2, '0') + ' ' +
-            String(startDate.getHours()).padStart(2, '0') + ':' +
-            String(startDate.getMinutes()).padStart(2, '0') + ':' +
-            String(startDate.getSeconds()).padStart(2, '0');
-          
-          const endTime = endDate.getFullYear() + '-' + 
-            String(endDate.getMonth() + 1).padStart(2, '0') + '-' + 
-            String(endDate.getDate()).padStart(2, '0') + ' ' +
-            String(endDate.getHours()).padStart(2, '0') + ':' +
-            String(endDate.getMinutes()).padStart(2, '0') + ':' +
-            String(endDate.getSeconds()).padStart(2, '0');
+          const startTime = startDate.toISOString().slice(0, 19).replace('T', ' ');
+          const endTime = endDate.toISOString().slice(0, 19).replace('T', ' ');
 
           console.log(`📊 Loading 30-day chart: ${startTime} to ${endTime}`);
 
-          // Use NEW uploadData API with timeUnit=1 (daily data)
+          // Use uploadData API with timeUnit=1 (daily data) - CORRECT for 30-day chart
           const response = await fetch(`/api/devices/${this.deviceSn}/uploadData?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&timeUnit=1`);
 
           if (response.ok) {
             const data = await response.json();
             console.log('✅ 30-day uploadData loaded:', data);
-            
+
             // Transform uploadData format to match chart expectations
-            const transformedData = this.transformUploadData(data, 'monthly');
-            this.renderChart('monthChart', transformedData, '30-Day Generation Trend');
+            const transformedData = this.transformUploadData(data, 'daily');
+            this.renderDailyChart('monthChart', transformedData, '30-Day Generation Trend');
             document.getElementById('monthPeriod').textContent = `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
           } else {
             const errorText = await response.text();
@@ -459,7 +435,7 @@
       // Transform uploadData API response to format expected by charts
       transformUploadData(uploadResponse, chartType) {
         console.log(`🔄 Transforming uploadData for ${chartType} chart:`, uploadResponse);
-        
+
         if (!uploadResponse || uploadResponse.code !== 200 || !uploadResponse.data?.data) {
           console.error('❌ Invalid uploadData response:', uploadResponse);
           return { code: 400, msg: 'Invalid data format', data: [] };
@@ -467,11 +443,11 @@
 
         // Extract the data array from uploadData format
         const uploadDataPoints = uploadResponse.data.data;
-        
+
         // Transform to format expected by existing renderChart function
         // uploadData gives us: { dataTime: "2025-08-26 00:00:00", pVEnergy: 23.65 }
         // renderChart expects: { dataTime: "...", totalPVPower: power_value }
-        
+
         const transformedData = uploadDataPoints.map(point => ({
           dataTime: point.dataTime,
           totalPVPower: (point.pVEnergy || 0) * 1000, // Convert kWh to Wh for power simulation
@@ -482,6 +458,41 @@
 
         console.log(`✅ Transformed ${transformedData.length} data points for ${chartType}`);
         console.log('🔍 Sample transformed point:', transformedData[0]);
+
+        return {
+          code: 200,
+          msg: 'success',
+          data: transformedData
+        };
+      }
+
+      // Transform historical API response to format expected by charts
+      transformHistoricalData(historicalResponse, chartType) {
+        console.log(`🔄 Transforming historical data for ${chartType} chart:`, historicalResponse);
+
+        if (!historicalResponse || historicalResponse.code !== 200 || !historicalResponse.data) {
+          console.error('❌ Invalid historical response:', historicalResponse);
+          return { code: 400, msg: 'Invalid data format', data: [] };
+        }
+
+        // Historical data comes as array of data points
+        const historicalDataPoints = Array.isArray(historicalResponse.data) ? historicalResponse.data : [historicalResponse.data];
+
+        // Transform to format expected by chart functions
+        // Historical data has many fields, we need totalPVPower for the chart
+        const transformedData = historicalDataPoints.map(point => ({
+          dataTime: point.dataTime,
+          totalPVPower: parseFloat(point.totalPVPower) || 0,
+          todayPvEnergy: parseFloat(point.todayPvEnergy) || 0,
+          deviceSn: this.deviceSn,
+          // Keep other useful fields
+          pv1Power: point.pv1Power,
+          pv2Power: point.pv2Power,
+          rGridPowerWatt: point.rGridPowerWatt
+        }));
+
+        console.log(`✅ Transformed ${transformedData.length} historical data points for ${chartType}`);
+        console.log('🔍 Sample historical point:', transformedData[0]);
 
         return {
           code: 200,
@@ -713,6 +724,301 @@
               <div style="display: flex; align-items: center; gap: 6px;">
                 <div style="width: 8px; height: 8px; background: #1e40af; border-radius: 50%;"></div>
                 <span><strong>Energy:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.todayPvEnergy) || 0), 0)).toFixed(2)}kWh</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        chartElement.innerHTML = chartHTML;
+      }
+
+      // Render hourly chart (for yesterday data)
+      renderHourlyChart(chartId, data, title) {
+        const chartElement = document.getElementById(chartId);
+        console.log(`Rendering hourly chart ${chartId} with title: ${title}`);
+        console.log('Data received:', data);
+
+        // Remove chart-placeholder styling
+        chartElement.style.background = 'none';
+        chartElement.style.border = 'none';
+        chartElement.style.height = 'auto';
+        chartElement.style.display = 'block';
+        chartElement.style.padding = '0';
+        chartElement.style.alignItems = 'initial';
+        chartElement.style.justifyContent = 'initial';
+
+        if (!data || data.code !== 200) {
+          console.error(`Invalid data format for ${chartId}:`, data);
+          chartElement.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444;">❌ Invalid data format</div>';
+          return;
+        }
+
+        let dataPoints = [];
+        if (Array.isArray(data.data)) {
+          dataPoints = data.data;
+        } else if (data.data && typeof data.data === 'object') {
+          dataPoints = [data.data];
+        }
+
+        if (dataPoints.length === 0) {
+          chartElement.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;">📊 No data available for this period</div>';
+          return;
+        }
+
+        const maxPower = Math.max(...dataPoints.map(d => parseFloat(d.totalPVPower) || 0));
+
+        if (maxPower === 0) {
+          chartElement.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;">📊 No power generation data available</div>';
+          return;
+        }
+
+        // Create hourly time grid (5am to 9pm)
+        const chartHeight = 200;
+
+        const createHourlyGrid = () => {
+          const startHour = 5; // 5am
+          const endHour = 21;  // 9pm
+          const timePoints = [];
+
+          for (let hour = startHour; hour <= endHour; hour++) {
+            timePoints.push({
+              hour,
+              timeLabel: `${hour.toString().padStart(2, '0')}:00`,
+              x: ((hour - startHour) / (endHour - startHour)) * 100,
+              power: 0
+            });
+          }
+
+          return timePoints;
+        };
+
+        const timeGrid = createHourlyGrid();
+
+        // Map actual data to hourly grid
+        dataPoints.forEach(point => {
+          const pointTime = new Date(point.dataTime);
+          const pointHour = pointTime.getHours();
+          const power = parseFloat(point.totalPVPower) || 0;
+
+          const gridPoint = timeGrid.find(grid => grid.hour === pointHour);
+          if (gridPoint) {
+            gridPoint.power = Math.max(gridPoint.power, power);
+          }
+        });
+
+        // Generate SVG path
+        let pathData = '';
+        let areaPath = '';
+        const points = timeGrid.map(gridPoint => ({
+          x: gridPoint.x,
+          y: ((maxPower - gridPoint.power) / maxPower) * 80 + 10,
+          power: gridPoint.power,
+          time: gridPoint.timeLabel,
+          hour: gridPoint.hour
+        }));
+
+        if (points.length > 0) {
+          pathData = `M ${points[0].x} ${points[0].y}`;
+          areaPath = `M ${points[0].x} 90 L ${points[0].x} ${points[0].y}`;
+
+          for (let i = 1; i < points.length; i++) {
+            const p0 = points[i - 1];
+            const p1 = points[i];
+            const cp1x = p0.x + (p1.x - p0.x) * 0.5;
+            const cp1y = p0.y;
+            const cp2x = p1.x - (p1.x - p0.x) * 0.5;
+            const cp2y = p1.y;
+
+            pathData += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
+            areaPath += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
+          }
+
+          areaPath += ` L ${points[points.length - 1].x} 90 Z`;
+        }
+
+        let chartHTML = `
+          <div style="padding: 20px; background: #1e293b; border-radius: 12px; margin: 8px 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px; text-align: center; font-weight: 500;">
+              ${title} (${dataPoints.length} data points)
+            </div>
+
+            <div style="position: relative; height: ${chartHeight}px; margin-bottom: 20px; background: #0f172a; border-radius: 8px; padding: 16px;">
+              <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="overflow: visible; display: block;">
+                <defs>
+                  <linearGradient id="hourlyAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#2563eb;stop-opacity:0.9" />
+                    <stop offset="25%" style="stop-color:#3b82f6;stop-opacity:0.6" />
+                    <stop offset="75%" style="stop-color:#1e40af;stop-opacity:0.3" />
+                    <stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:0.1" />
+                  </linearGradient>
+                </defs>
+
+                <path d="${areaPath}" fill="url(#hourlyAreaGradient)" />
+                <path d="${pathData}" fill="none" stroke="#2563eb" stroke-width="1" />
+
+                ${points.map(point => `
+                  <circle cx="${point.x}" cy="${point.y}" r="0.4" fill="#2563eb" opacity="0.9">
+                    <title>${point.time}: ${point.power.toFixed(0)}W</title>
+                  </circle>
+                `).join('')}
+              </svg>
+
+              <div style="position: absolute; bottom: -25px; left: 16px; right: 16px; display: flex; justify-content: space-between;">
+                ${points.filter(point => point.hour % 3 === 0).map(point => `
+                  <span style="font-size: 10px; color: #64748b; text-align: center; min-width: 30px;">
+                    ${Math.floor(point.hour).toString().padStart(2, '0')}:00
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid #334155; padding-top: 16px; font-size: 13px; color: #cbd5e1; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 8px; height: 8px; background: #2563eb; border-radius: 50%;"></div>
+                <span><strong>Peak:</strong> ${maxPower.toFixed(0)}W</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%;"></div>
+                <span><strong>Avg:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.totalPVPower) || 0), 0) / dataPoints.length).toFixed(0)}W</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 8px; height: 8px; background: #1e40af; border-radius: 50%;"></div>
+                <span><strong>Energy:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.todayPvEnergy) || 0), 0)).toFixed(2)}kWh</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        chartElement.innerHTML = chartHTML;
+      }
+
+      // Render daily chart (for 7-day and 30-day data)
+      renderDailyChart(chartId, data, title) {
+        const chartElement = document.getElementById(chartId);
+        console.log(`Rendering daily chart ${chartId} with title: ${title}`);
+        console.log('Data received:', data);
+
+        // Remove chart-placeholder styling
+        chartElement.style.background = 'none';
+        chartElement.style.border = 'none';
+        chartElement.style.height = 'auto';
+        chartElement.style.display = 'block';
+        chartElement.style.padding = '0';
+        chartElement.style.alignItems = 'initial';
+        chartElement.style.justifyContent = 'initial';
+
+        if (!data || data.code !== 200) {
+          console.error(`Invalid data format for ${chartId}:`, data);
+          chartElement.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444;">❌ Invalid data format</div>';
+          return;
+        }
+
+        let dataPoints = [];
+        if (Array.isArray(data.data)) {
+          dataPoints = data.data;
+        } else if (data.data && typeof data.data === 'object') {
+          dataPoints = [data.data];
+        }
+
+        if (dataPoints.length === 0) {
+          chartElement.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;">📊 No data available for this period</div>';
+          return;
+        }
+
+        const maxEnergy = Math.max(...dataPoints.map(d => parseFloat(d.todayPvEnergy) || 0));
+
+        if (maxEnergy === 0) {
+          chartElement.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;">📊 No energy generation data available</div>';
+          return;
+        }
+
+        // Create daily time grid
+        const chartHeight = 200;
+        const timeGrid = dataPoints.map((point, index) => ({
+          index,
+          date: new Date(point.dataTime).toLocaleDateString(),
+          x: (index / (dataPoints.length - 1)) * 100,
+          energy: parseFloat(point.todayPvEnergy) || 0
+        }));
+
+        // Generate SVG path for daily chart
+        let pathData = '';
+        let areaPath = '';
+        const points = timeGrid.map(gridPoint => ({
+          x: gridPoint.x,
+          y: ((maxEnergy - gridPoint.energy) / maxEnergy) * 80 + 10,
+          energy: gridPoint.energy,
+          date: gridPoint.date,
+          index: gridPoint.index
+        }));
+
+        if (points.length > 0) {
+          pathData = `M ${points[0].x} ${points[0].y}`;
+          areaPath = `M ${points[0].x} 90 L ${points[0].x} ${points[0].y}`;
+
+          for (let i = 1; i < points.length; i++) {
+            const p0 = points[i - 1];
+            const p1 = points[i];
+            const cp1x = p0.x + (p1.x - p0.x) * 0.5;
+            const cp1y = p0.y;
+            const cp2x = p1.x - (p1.x - p0.x) * 0.5;
+            const cp2y = p1.y;
+
+            pathData += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
+            areaPath += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
+          }
+
+          areaPath += ` L ${points[points.length - 1].x} 90 Z`;
+        }
+
+        let chartHTML = `
+          <div style="padding: 20px; background: #1e293b; border-radius: 12px; margin: 8px 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px; text-align: center; font-weight: 500;">
+              ${title} (${dataPoints.length} data points)
+            </div>
+
+            <div style="position: relative; height: ${chartHeight}px; margin-bottom: 20px; background: #0f172a; border-radius: 8px; padding: 16px;">
+              <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="overflow: visible; display: block;">
+                <defs>
+                  <linearGradient id="dailyAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.9" />
+                    <stop offset="25%" style="stop-color:#34d399;stop-opacity:0.6" />
+                    <stop offset="75%" style="stop-color:#059669;stop-opacity:0.3" />
+                    <stop offset="100%" style="stop-color:#047857;stop-opacity:0.1" />
+                  </linearGradient>
+                </defs>
+
+                <path d="${areaPath}" fill="url(#dailyAreaGradient)" />
+                <path d="${pathData}" fill="none" stroke="#10b981" stroke-width="1" />
+
+                ${points.map(point => `
+                  <circle cx="${point.x}" cy="${point.y}" r="0.4" fill="#10b981" opacity="0.9">
+                    <title>${point.date}: ${point.energy.toFixed(2)}kWh</title>
+                  </circle>
+                `).join('')}
+              </svg>
+
+              <div style="position: absolute; bottom: -25px; left: 16px; right: 16px; display: flex; justify-content: space-between;">
+                ${points.filter((point, index) => index % Math.ceil(points.length / 5) === 0).map(point => `
+                  <span style="font-size: 10px; color: #64748b; text-align: center; min-width: 40px;">
+                    ${point.date.split('/')[1]}/${point.date.split('/')[0]}
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid #334155; padding-top: 16px; font-size: 13px; color: #cbd5e1; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
+                <span><strong>Peak:</strong> ${maxEnergy.toFixed(2)}kWh</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 8px; height: 8px; background: #34d399; border-radius: 50%;"></div>
+                <span><strong>Avg:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.todayPvEnergy) || 0), 0) / dataPoints.length).toFixed(2)}kWh</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 8px; height: 8px; background: #059669; border-radius: 50%;"></div>
+                <span><strong>Total:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.todayPvEnergy) || 0), 0)).toFixed(2)}kWh</span>
               </div>
             </div>
           </div>
