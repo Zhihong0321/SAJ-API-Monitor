@@ -27,6 +27,124 @@
       font-weight: bold;
       margin: var(--space-4) 0;
     }
+
+    /* LED Light Status */
+    .led-indicator {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      position: relative;
+      display: inline-block;
+      margin-right: var(--space-2);
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .led-indicator::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: inherit;
+      opacity: 0.8;
+      animation: led-glow 2s ease-in-out infinite alternate;
+    }
+
+    .led-online {
+      background: var(--color-solar-online);
+      box-shadow: 0 0 12px var(--color-solar-online);
+    }
+
+    .led-offline {
+      background: var(--color-solar-offline);
+      box-shadow: 0 0 12px var(--color-solar-offline);
+    }
+
+    @keyframes led-glow {
+      0% {
+        opacity: 0.6;
+        transform: translate(-50%, -50%) scale(0.8);
+      }
+      100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.2);
+      }
+    }
+
+    /* Device Grid Layout */
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-3);
+      margin-top: var(--space-4);
+    }
+
+    .device-item {
+      background: var(--color-bg-secondary);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+      border: 1px solid var(--color-border-primary);
+      text-align: center;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: all var(--transition-fast);
+    }
+
+    .device-item:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--color-border-secondary);
+    }
+
+    .device-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: var(--space-2);
+    }
+
+    .device-name {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-1);
+      word-break: break-word;
+      line-height: 1.2;
+    }
+
+    .device-model {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+
+    /* Mobile optimizations */
+    @media (max-width: 640px) {
+      .device-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-2);
+      }
+
+      .device-item {
+        padding: var(--space-2);
+        min-height: 80px;
+      }
+
+      .device-name {
+        font-size: 0.75rem;
+      }
+
+      .device-model {
+        font-size: 0.625rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -156,7 +274,7 @@
         return response.json();
       }
 
-      async fetchRecentDevices(limit = 5) {
+      async fetchRecentDevices(limit = 12) {
         const response = await fetch(`/api/devices?limit=${limit}`);
         if (!response.ok) throw new Error('Failed to fetch devices');
         return response.json();
@@ -180,21 +298,19 @@
         }
 
         noDevices.style.display = 'none';
-        deviceList.innerHTML = devices.map(device => `
-          <div class="device-card">
-            <div class="device-header">
-              <div class="device-title">${device.plant_name}</div>
-              <span class="badge ${device.is_online ? 'badge-online' : 'badge-offline'}">
-                ${device.is_online ? 'Online' : 'Offline'}
-              </span>
-            </div>
-            <div class="text-body-small">
-              <div>Device: ${device.device_sn}</div>
-              <div>Type: ${device.device_type}</div>
-              <div>Location: ${device.country}</div>
-            </div>
+        deviceList.innerHTML = `
+          <div class="device-grid">
+            ${devices.map(device => `
+              <div class="device-item">
+                <div class="device-status">
+                  <div class="led-indicator ${device.is_online ? 'led-online' : 'led-offline'}"></div>
+                </div>
+                <div class="device-name">${device.plant_name || 'Unknown Device'}</div>
+                <div class="device-model">${device.device_type || 'N/A'}</div>
+              </div>
+            `).join('')}
           </div>
-        `).join('');
+        `;
       }
 
 
