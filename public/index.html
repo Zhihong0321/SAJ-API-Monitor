@@ -256,7 +256,7 @@
           const deviceSummary = await this.fetchDeviceSummary();
           this.updateDeviceCounts(deviceSummary);
           
-          // Load recent devices
+          // Load all devices
           const devices = await this.fetchRecentDevices();
           this.renderDeviceList(devices);
           
@@ -274,8 +274,9 @@
         return response.json();
       }
 
-      async fetchRecentDevices(limit = 12) {
-        const response = await fetch(`/api/devices?limit=${limit}`);
+      async fetchRecentDevices(limit = null) {
+        const url = limit ? `/api/devices?limit=${limit}` : '/api/devices';
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch devices');
         return response.json();
       }

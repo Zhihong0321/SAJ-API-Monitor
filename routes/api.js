@@ -268,24 +268,34 @@ router.post('/devices/generate-signatures', async (req, res) => {
 // Get devices from local database
 router.get('/devices', async (req, res) => {
   const client = await getDBClient();
-  
+
   try {
     await client.connect();
-    const limit = parseInt(req.query.limit) || 50;
+    const limit = req.query.limit ? parseInt(req.query.limit) : null; // No limit if not specified
     const offset = parseInt(req.query.offset) || 0;
-    
-    const result = await client.query(`
-      SELECT * FROM saj_devices 
-      ORDER BY updated_at DESC, created_at DESC 
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
-    
+
+    let query = `
+      SELECT * FROM saj_devices
+      ORDER BY updated_at DESC, created_at DESC
+    `;
+    let params = [];
+
+    if (limit) {
+      query += ` LIMIT $1 OFFSET $2`;
+      params = [limit, offset];
+    } else if (offset > 0) {
+      query += ` OFFSET $1`;
+      params = [offset];
+    }
+
+    const result = await client.query(query, params);
+
     res.json(result.rows);
-    
+
   } catch (error) {
     console.error('❌ Failed to fetch devices:', error.message);
     res.status(500).json({ error: 'Failed to fetch devices', message: error.message });
-    
+
   } finally {
     await client.end();
   }
