@@ -597,4 +597,140 @@ router.get('/devices/:deviceSn/historical', async (req, res) => {
   }
 });
 
+// NEW: Get device upload data (alternative historical data API)
+router.get('/devices/:deviceSn/uploadData', async (req, res) => {
+  const { deviceSn } = req.params;
+  const { startTime, endTime, timeUnit } = req.query;
+
+  if (!startTime || !endTime || timeUnit === undefined) {
+    return res.status(400).json({
+      error: 'Missing required parameters',
+      message: 'startTime, endTime and timeUnit are required',
+      timeUnitOptions: {
+        0: 'minute data',
+        1: 'day data', 
+        2: 'month data',
+        3: 'year data'
+      }
+    });
+  }
+
+  try {
+    console.log(`📊 Getting uploadData for device: ${deviceSn}`);
+    console.log(`📅 Date range: ${startTime} to ${endTime}`);
+    console.log(`⏰ Time unit: ${timeUnit} (${['minute', 'day', 'month', 'year'][timeUnit] || 'unknown'})`);
+
+    // Get access token first with detailed logging
+    console.log(`🔑 Requesting access token for uploadData`);
+    console.log(`🔧 Using appId: ${SAJ_CONFIG.appId}`);
+    
+    const tokenResponse = await axios.get(`${SAJ_CONFIG.baseUrl}/access_token`, {
+      params: {
+        appId: SAJ_CONFIG.appId,
+        appSecret: SAJ_CONFIG.appSecret
+      },
+      headers: SAJ_CONFIG.headers,
+      timeout: 10000
+    });
+
+    console.log(`🔑 Token response code: ${tokenResponse.data.code}`);
+    console.log(`🔑 Token response message: ${tokenResponse.data.msg || 'No message'}`);
+
+    if (tokenResponse.data.code !== 200) {
+      console.error(`❌ Token request failed:`, tokenResponse.data);
+      throw new Error(`Failed to get access token: ${tokenResponse.data.msg || tokenResponse.data.code}`);
+    }
+
+    const accessToken = tokenResponse.data.data?.access_token;
+    if (!accessToken) {
+      console.error(`❌ No access token in response:`, tokenResponse.data);
+      throw new Error('Access token not found in response');
+    }
+    
+    console.log(`✅ Access token obtained: ${accessToken.substring(0, 20)}...`);
+    const clientSign = generateClientSign(deviceSn);
+    console.log(`🔐 Generated client signature: ${clientSign.substring(0, 20)}...`);
+
+    // Get upload data using NEW API endpoint
+    console.log(`📡 Making uploadData API call...`);
+    const response = await axios.get(`${SAJ_CONFIG.baseUrl}/device/uploadData`, {
+      params: {
+        deviceSn,
+        startTime,
+        endTime,
+        timeUnit: parseInt(timeUnit)
+      },
+      headers: {
+        ...SAJ_CONFIG.headers,
+        accessToken: accessToken,
+        clientSign: clientSign
+      },
+      timeout: 30000 // Longer timeout for historical data
+    });
+
+    console.log(`📡 UploadData API response code: ${response.data.code}`);
+    console.log(`📊 Data points received: ${response.data.data ? response.data.data.length : 0}`);
+
+    if (response.data.code === 200) {
+      console.log(`✅ Upload data retrieved successfully`);
+      
+      // Add metadata about the request for analysis
+      const responseWithMeta = {
+        ...response.data,
+        requestInfo: {
+          deviceSn,
+          startTime,
+          endTime,
+          timeUnit: parseInt(timeUnit),
+          timeUnitName: ['minute', 'day', 'month', 'year'][timeUnit] || 'unknown',
+          dataPoints: response.data.data ? response.data.data.length : 0
+        }
+      };
+      
+      res.json(responseWithMeta);
+    } else {
+      // Handle specific SAJ API error codes
+      console.log(`❌ SAJ API returned error code: ${response.data.code}, message: ${response.data.msg}`);
+      
+      let httpStatus = 500;
+      let userMessage = response.data.msg || 'Unknown API error';
+      
+      // Handle specific SAJ API error codes
+      if (response.data.code === 200010) {
+        httpStatus = 401;
+        userMessage = 'Authentication failed - invalid token or expired session';
+      } else if (response.data.code === 200011) {
+        httpStatus = 403;
+        userMessage = 'Access forbidden - invalid device or insufficient permissions';
+      } else if (response.data.code === 200001) {
+        httpStatus = 400;
+        userMessage = 'Invalid request parameters';
+      }
+      
+      res.status(httpStatus).json({
+        error: 'SAJ API Error',
+        message: userMessage,
+        code: response.data.code,
+        originalMessage: response.data.msg
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Failed to get upload data:', error.message);
+
+    if (error.response) {
+      res.status(error.response.status).json({
+        error: 'SAJ API Error',
+        message: error.response.data?.msg || error.message,
+        status: error.response.status
+      });
+    } else {
+      res.status(500).json({
+        error: 'Failed to get upload data',
+        message: error.message
+      });
+    }
+  }
+});
+
 module.exports = router;
