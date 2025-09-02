@@ -422,6 +422,15 @@
         const chartElement = document.getElementById(chartId);
         console.log(`Rendering chart ${chartId} with title: ${title}`);
         console.log('Data received:', data);
+        
+        // Remove chart-placeholder styling to avoid dual container effect
+        chartElement.style.background = 'none';
+        chartElement.style.border = 'none';
+        chartElement.style.height = 'auto';
+        chartElement.style.display = 'block';
+        chartElement.style.padding = '0';
+        chartElement.style.alignItems = 'initial';
+        chartElement.style.justifyContent = 'initial';
 
         // Check if data exists and has the correct structure
         if (!data || data.code !== 200) {
