@@ -466,19 +466,24 @@
         // Create smooth area chart with SVG (like reference design)
         const chartHeight = 200;
         
-        // Create fixed time grid from 5am to 9pm (16 hours)
+        // Create fixed time grid from 5am to 9pm with sub-hourly points for smoother curves
         const createTimeGrid = () => {
           const startHour = 5; // 5am
           const endHour = 21;  // 9pm
           const timePoints = [];
           
-          for (let hour = startHour; hour <= endHour; hour++) {
-            const timeLabel = `${hour.toString().padStart(2, '0')}:00`;
+          // Create points every 30 minutes for smoother interpolation
+          for (let hour = startHour; hour <= endHour; hour += 0.5) {
+            const wholeHour = Math.floor(hour);
+            const minutes = (hour % 1) * 60;
+            const timeLabel = `${wholeHour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            
             timePoints.push({
               hour,
               timeLabel,
               x: ((hour - startHour) / (endHour - startHour)) * 100,
-              power: 0 // default to 0, will be updated with real data
+              power: 0, // default to 0, will be updated with real data
+              isMainHour: minutes === 0 // Track main hours for labeling
             });
           }
           
@@ -487,16 +492,21 @@
         
         const timeGrid = createTimeGrid();
         
-        // Map actual data to time grid
+        // Map actual data to time grid with interpolation
         dataPoints.forEach(point => {
           const pointTime = new Date(point.dataTime);
-          const pointHour = pointTime.getHours();
+          const pointHour = pointTime.getHours() + pointTime.getMinutes() / 60;
           const power = parseFloat(point.totalPVPower) || 0;
           
-          // Find closest hour in our time grid
-          const gridPoint = timeGrid.find(tp => tp.hour === pointHour);
-          if (gridPoint) {
-            gridPoint.power = Math.max(gridPoint.power, power); // Take maximum power for that hour
+          // Find closest time slot in our grid (within 30 minute window)
+          const closestGridPoint = timeGrid.reduce((closest, current) => {
+            const currentDiff = Math.abs(current.hour - pointHour);
+            const closestDiff = Math.abs(closest.hour - pointHour);
+            return currentDiff < closestDiff ? current : closest;
+          });
+          
+          if (closestGridPoint) {
+            closestGridPoint.power = Math.max(closestGridPoint.power, power);
           }
         });
         
@@ -512,18 +522,31 @@
         }));
 
         if (points.length > 0) {
-          // Create smooth curve using quadratic bezier curves
+          // Create ultra-smooth curve using cubic bezier with cardinal spline interpolation
           pathData = `M ${points[0].x} ${points[0].y}`;
           areaPath = `M ${points[0].x} 90 L ${points[0].x} ${points[0].y}`;
           
+          // Function to calculate smooth control points for cardinal spline
+          const getControlPoints = (p0, p1, p2, p3, tension = 0.3) => {
+            const t = tension;
+            const cp1x = p1.x + (p2.x - (p0 ? p0.x : p1.x)) * t;
+            const cp1y = p1.y + (p2.y - (p0 ? p0.y : p1.y)) * t;
+            const cp2x = p2.x - (p3 ? p3.x - p1.x : p2.x - p1.x) * t;
+            const cp2y = p2.y - (p3 ? p3.y - p1.y : p2.y - p1.y) * t;
+            return { cp1x, cp1y, cp2x, cp2y };
+          };
+          
           for (let i = 1; i < points.length; i++) {
-            const prevPoint = points[i - 1];
-            const currentPoint = points[i];
+            const p0 = points[i - 2] || points[i - 1]; // Previous point or current if first
+            const p1 = points[i - 1]; // Current point
+            const p2 = points[i]; // Next point
+            const p3 = points[i + 1] || points[i]; // Point after next or current if last
             
-            // Control point for smooth curve (midpoint technique)
-            const cpX = (prevPoint.x + currentPoint.x) / 2;
-            pathData += ` Q ${cpX} ${prevPoint.y} ${currentPoint.x} ${currentPoint.y}`;
-            areaPath += ` Q ${cpX} ${prevPoint.y} ${currentPoint.x} ${currentPoint.y}`;
+            const controls = getControlPoints(p0, p1, p2, p3, 0.25);
+            
+            // Use cubic bezier for ultra-smooth curves
+            pathData += ` C ${controls.cp1x} ${controls.cp1y}, ${controls.cp2x} ${controls.cp2y}, ${p2.x} ${p2.y}`;
+            areaPath += ` C ${controls.cp1x} ${controls.cp1y}, ${controls.cp2x} ${controls.cp2y}, ${p2.x} ${p2.y}`;
           }
           
           // Close the area path
@@ -565,9 +588,9 @@
               
               <!-- Time labels -->
               <div style="position: absolute; bottom: -25px; left: 16px; right: 16px; display: flex; justify-content: space-between;">
-                ${points.filter((_, i) => i % 3 === 0).map(point => `
+                ${points.filter(point => point.hour % 3 === 0 && point.hour % 1 === 0).map(point => `
                   <span style="font-size: 10px; color: #64748b; text-align: center; min-width: 30px;">
-                    ${point.time}
+                    ${Math.floor(point.hour).toString().padStart(2, '0')}:00
                   </span>
                 `).join('')}
               </div>
