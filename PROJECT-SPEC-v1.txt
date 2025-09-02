@@ -1,0 +1,446 @@
+We are a solar company, using SAJ Inverter.
+we are building a APP to monitor Inverter data, from SAJ API server.
+
+Project Task
+
+1. Based on Google Material Library
+2. Mobile Only
+
+
+3. Landing Page = Dashboard ( welcome 1st, but has a expandable navigation large enough for future APP expansion )
+
+4. Sync Device Page ( which allow us to sync device list from SAJ API Server. )
+sample data from Get Device :
+{
+    "total": 47,
+    "rows": [
+        {
+            "deviceSn": "M2S2102G2437E02093",
+            "deviceType": "S12",
+            "plantId": "23793558347",
+            "plantName": "Dharmalingam A/L Sivilingam",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S2102G2437E02095",
+            "deviceType": "S12",
+            "plantId": "24028201864",
+            "plantName": "Edwin Heng",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S2102G2437E02098",
+            "deviceType": "S12",
+            "plantId": "24028201864",
+            "plantName": "Edwin Heng",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S2102G2437E02104",
+            "deviceType": "S12",
+            "plantId": "23759059767",
+            "plantName": "Lo Thiang Chooi",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S2102G2437E02108",
+            "deviceType": "S12",
+            "plantId": "23805115254",
+            "plantName": "Low Choon Shean",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S2102G2507E00094",
+            "deviceType": "S12",
+            "plantId": "24028201864",
+            "plantName": "Edwin Heng",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2425E17981",
+            "deviceType": "S12",
+            "plantId": "23793558347",
+            "plantName": "Dharmalingam A/L Sivilingam",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2425E17986",
+            "deviceType": "S12",
+            "plantId": "23805115254",
+            "plantName": "Low Choon Shean",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2425E17987",
+            "deviceType": "S12",
+            "plantId": "23793558347",
+            "plantName": "Dharmalingam A/L Sivilingam",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2425E17988",
+            "deviceType": "S12",
+            "plantId": "23805115254",
+            "plantName": "Low Choon Shean",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2425E18009",
+            "deviceType": "S12",
+            "plantId": "23793558347",
+            "plantName": "Dharmalingam A/L Sivilingam",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2425E18012",
+            "deviceType": "S12",
+            "plantId": "23793558347",
+            "plantName": "Dharmalingam A/L Sivilingam",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2425E18016",
+            "deviceType": "S12",
+            "plantId": "24091103531",
+            "plantName": "Chang Heng Keong",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2425E18022",
+            "deviceType": "S12",
+            "plantId": "23759059767",
+            "plantName": "Lo Thiang Chooi",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2425E18032",
+            "deviceType": "S12",
+            "plantId": "23805115254",
+            "plantName": "Low Choon Shean",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2425E18035",
+            "deviceType": "S12",
+            "plantId": "23759059767",
+            "plantName": "Lo Thiang Chooi",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2425E18038",
+            "deviceType": "S12",
+            "plantId": "23759059767",
+            "plantName": "Lo Thiang Chooi",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2425E18040",
+            "deviceType": "S12",
+            "plantId": "23805115254",
+            "plantName": "Low Choon Shean",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2425E18051",
+            "deviceType": "S12",
+            "plantId": "24091103531",
+            "plantName": "Chang Heng Keong",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2425E18055",
+            "deviceType": "S12",
+            "plantId": "24091103531",
+            "plantName": "Chang Heng Keong",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4182J2514E06924",
+            "deviceType": "S12",
+            "plantId": "23793558347",
+            "plantName": "Dharmalingam A/L Sivilingam",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4202J2442E39872",
+            "deviceType": "S12",
+            "plantId": "24028201864",
+            "plantName": "Edwin Heng",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4202J2442E39875",
+            "deviceType": "S12",
+            "plantId": "24028201864",
+            "plantName": "Edwin Heng",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4202J2442E39898",
+            "deviceType": "S12",
+            "plantId": "24028201864",
+            "plantName": "Edwin Heng",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4202J2442E39903",
+            "deviceType": "S12",
+            "plantId": "24028201864",
+            "plantName": "Edwin Heng",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4202J2442E39916",
+            "deviceType": "S12",
+            "plantId": "24028201864",
+            "plantName": "Edwin Heng",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4202J2517E09270",
+            "deviceType": "S12",
+            "plantId": "24028201864",
+            "plantName": "Edwin Heng",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "M2S4202J2517E09296",
+            "deviceType": "S12",
+            "plantId": "24028201864",
+            "plantName": "Edwin Heng",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "R5X2602G2415E00048",
+            "deviceType": "R5",
+            "plantId": "24116644196",
+            "plantName": "Hing Swee Chuan",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "R5X2802J2421E79711",
+            "deviceType": "R5",
+            "plantId": "24057490245",
+            "plantName": "A7292 Alur Akar 72",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "R5X2802J2421E79761",
+            "deviceType": "R5",
+            "plantId": "24027663404",
+            "plantName": "Tan Cheng Eong",
+            "isOnline": 0,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "R6F2173J2316E17023",
+            "deviceType": "R6",
+            "plantId": "23695815556",
+            "plantName": "Morriq Infinite Sdn Bhd",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "R6K2083J2424E36934",
+            "deviceType": "R6S",
+            "plantId": "23896122507",
+            "plantName": "Chia Jau Bin",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        },
+        {
+            "deviceSn": "R6K2103J2428E42216",
+            "deviceType": "R6S",
+            "plantId": "24091103531",
+            "plantName": "Chang Heng Keong",
+            "isOnline": 1,
+            "isAlarm": 0,
+            "country": "Malaysia"
+        }
+    ],
+    "code": 200,
+    "msg": "查询成功",
+    "totalPage": 5
+}
+
+
+
+5. from the sync device data, you need to create new data table in server to store these data.
+
+6. Check Device Status ( it will list out all device and check their status from API. Every call require
+- access token ( I will explain this api later )
+- clientsign = sha256("appId=VH_3TmblTqb,deviceSN=M2S4182G2349E02268")  ( please store this into Database as well. we no need to generate this every time call, app ip is fixed entire app, deviceSN = follow device )
+
+7. I will let you made the API call and you get a copy of real data to analysis how to do.
+
+
+8. --Access token, to be use for all api call = 
+GET https://intl-developer.saj-electric.com/prod-api/open/api/access_token
+Header : content-language = en_US:English
+parameters : appId = VH_3TmblTqb
+appSecret = VdtqQAUrVHoKs5hQUpvD4khelTqbBac2eK3VtE4f5GUx3TmbZy7o0JvutUsIsCBf
+(last for 28800 seconds)
+
+--Get Device List
+= GET https://intl-developer.saj-electric.com/prod-api/open/api/developer/device/page
+Header 
+content-language = en_US:English
+accessToken = {access token you gen}
+Parameter
+appId = VH_3TmblTqb
+pageNum = int
+
+--Real Time Device Data
+GET https://intl-developer.saj-electric.com/prod-api/open/api/device/realtimeDataCommon
+Headers=
+accessToken={access token you gen}
+content-language=en_US:English
+clientSign= {client sign you gen}
+
+
+CRITICAL REQUIREMENT - ACCESS TOKEN MANAGEMENT STRATEGY
+
+9. Multi-User Access Token Management:
+
+PROBLEM IDENTIFIED:
+- SAJ API Access Token expires every 28,800 seconds (8 hours)
+- Generating new access token INVALIDATES all previous tokens immediately
+- Multiple users accessing app simultaneously will cause token conflicts
+- User experience will be disrupted if tokens are regenerated during usage
+
+TESTED BEHAVIOR:
+- ✅ New token generation: Works perfectly
+- ❌ Old token after new generation: Returns "accessToken does not exist" error
+- 📋 CONCLUSION: Only ONE access token can be active at any time per app
+
+RECOMMENDED SOLUTION: Shared Token with Server-Side Management
+
+IMPLEMENTATION REQUIREMENTS:
+a) Single Shared Token Architecture:
+   - One access token shared across all users
+   - Server-side token management (not user-level)
+   - Automatic token renewal 30 minutes before expiration (at 7.5 hour mark)
+   - Background token refresh to prevent service interruption
+
+b) Database Schema for Token Management:
+   CREATE TABLE saj_tokens (
+     id SERIAL PRIMARY KEY,
+     access_token TEXT NOT NULL,
+     expires_at TIMESTAMP NOT NULL,
+     created_at TIMESTAMP DEFAULT NOW(),
+     is_active BOOLEAN DEFAULT TRUE
+   );
+
+   CREATE TABLE saj_token_requests (
+     id SERIAL PRIMARY KEY,
+     request_time TIMESTAMP DEFAULT NOW(),
+     user_id INTEGER,
+     endpoint_called VARCHAR(255),
+     success BOOLEAN,
+     error_message TEXT,
+     token_used VARCHAR(100)
+   );
+
+c) Token Service Implementation:
+   - TokenManager class to handle all token operations
+   - Automatic background renewal via cron job every 7.5 hours
+   - Health monitoring and alerting for token failures
+   - Graceful error handling and retry logic
+   - Token encryption in database storage
+
+d) User Experience Benefits:
+   ✅ Zero interruption: Seamless experience for all users
+   ✅ Fast response: No token generation delays during user requests
+   ✅ Reliable service: Automatic error recovery and monitoring
+   ✅ Scalable: Supports unlimited concurrent users
+   ✅ Transparent: Users never manage tokens directly
+
+e) API Request Flow:
+   User Request → API Gateway → Token Service (validates/refreshes) → SAJ API
+                      ↓                    ↓
+                 Transparent          Auto-refresh
+                 to users            if needed
+
+f) Error Handling Strategy:
+   - If token expires unexpectedly: Auto-generate new token
+   - If SAJ API is down: Implement retry logic with exponential backoff
+   - If token generation fails: Alert administrators immediately
+   - Cache last successful response for graceful degradation
+
+g) Monitoring Requirements:
+   - Token expiration alerts (24 hours, 1 hour, 30 minutes before expiry)
+   - Failed API request monitoring
+   - Token refresh success/failure tracking
+   - User request pattern analytics
+
+CRITICAL SUCCESS FACTORS:
+1. Never allow multiple simultaneous token generations
+2. Implement token refresh 30+ minutes before expiration
+3. Use database locks to prevent race conditions
+4. Monitor token health continuously
+5. Have fallback procedures for token failures
+
+This strategy ensures optimal user experience while maintaining system reliability and efficiency for multi-user access.

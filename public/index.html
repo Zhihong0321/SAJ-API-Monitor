@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <title>SAJ Solar Monitor</title>
+  <link rel="stylesheet" href="/design-system/styles.css">
+  <style>
+    body {
+      padding-bottom: 80px; /* Space for bottom navigation */
+    }
+    
+    .loading {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    
+    .energy-chart {
+      height: 120px;
+      background: linear-gradient(135deg, var(--color-solar-energy), var(--color-primary-500));
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      margin: var(--space-4) 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <h1 class="header-title">🌞 SAJ Solar Monitor</h1>
+    <button id="refreshBtn" class="btn btn-ghost btn-sm">
+      <span id="refreshIcon">🔄</span>
+    </button>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <!-- Welcome Section -->
+    <section class="mb-6">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Welcome to Solar Monitoring</h2>
+        </div>
+        <div class="card-content">
+          <p class="text-body-small">Monitor your SAJ solar inverter devices in real-time. Track energy generation, device status, and system performance.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Energy Overview -->
+    <section class="mb-6">
+      <h3 class="text-h3 mb-4">Energy Overview</h3>
+      
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="energy-meter">
+          <div class="energy-value" id="todayEnergy">--</div>
+          <div class="energy-label">Today (kWh)</div>
+        </div>
+        <div class="energy-meter">
+          <div class="energy-value" id="totalEnergy">--</div>
+          <div class="energy-label">Total (kWh)</div>
+        </div>
+      </div>
+
+      <div class="energy-chart" id="energyChart">
+        <span>📊 Energy Generation Chart</span>
+      </div>
+    </section>
+
+    <!-- Device Status Overview -->
+    <section class="mb-6">
+      <div class="card-header">
+        <h3 class="text-h3">Device Status</h3>
+        <a href="/sync" class="btn btn-primary btn-sm">Sync Devices</a>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        <div class="card text-center">
+          <div class="energy-value text-h2" id="totalDevices" style="color: var(--color-text-primary);">--</div>
+          <div class="energy-label">Total Devices</div>
+        </div>
+        <div class="card text-center">
+          <div class="energy-value text-h2" id="onlineDevices" style="color: var(--color-solar-online);">--</div>
+          <div class="energy-label">Online</div>
+        </div>
+        <div class="card text-center">
+          <div class="energy-value text-h2" id="alarmDevices" style="color: var(--color-solar-alarm);">--</div>
+          <div class="energy-label">Alarms</div>
+        </div>
+      </div>
+
+      <!-- Device List Preview -->
+      <div id="deviceList" class="space-y-3">
+        <!-- Devices will be loaded here -->
+      </div>
+
+      <div id="noDevices" class="card text-center" style="display: none;">
+        <div class="card-content">
+          <p class="text-body-small mb-4">No devices found. Sync devices from SAJ API to get started.</p>
+          <a href="/sync" class="btn btn-primary">Sync Devices Now</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="mb-6">
+      <h3 class="text-h3 mb-4">Quick Actions</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <a href="/sync" class="card card-interactive text-center">
+          <div class="card-content">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔄</div>
+            <div class="text-body">Sync Devices</div>
+            <div class="text-caption">Update device list</div>
+          </div>
+        </a>
+        <a href="/devices" class="card card-interactive text-center">
+          <div class="card-content">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📱</div>
+            <div class="text-body">View Devices</div>
+            <div class="text-caption">Device details</div>
+          </div>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="/" class="nav-item nav-item-active">
+      <div class="nav-icon">🏠</div>
+      <span>Dashboard</span>
+    </a>
+    <a href="/devices" class="nav-item">
+      <div class="nav-icon">📱</div>
+      <span>Devices</span>
+    </a>
+    <a href="/sync" class="nav-item">
+      <div class="nav-icon">🔄</div>
+      <span>Sync</span>
+    </a>
+    <a href="/settings" class="nav-item">
+      <div class="nav-icon">⚙️</div>
+      <span>Settings</span>
+    </a>
+  </nav>
+
+  <script>
+    // Dashboard functionality
+    class Dashboard {
+      constructor() {
+        this.init();
+      }
+
+      async init() {
+        await this.loadDashboardData();
+        this.setupEventListeners();
+      }
+
+      setupEventListeners() {
+        const refreshBtn = document.getElementById('refreshBtn');
+        refreshBtn.addEventListener('click', () => this.refreshData());
+      }
+
+      async loadDashboardData() {
+        try {
+          this.showLoading(true);
+          
+          // Load device summary
+          const deviceSummary = await this.fetchDeviceSummary();
+          this.updateDeviceCounts(deviceSummary);
+          
+          // Load recent devices
+          const devices = await this.fetchRecentDevices();
+          this.renderDeviceList(devices);
+          
+          // Load energy summary (placeholder for now)
+          this.updateEnergySummary();
+          
+        } catch (error) {
+          console.error('Failed to load dashboard data:', error);
+          this.showError('Failed to load dashboard data');
+        } finally {
+          this.showLoading(false);
+        }
+      }
+
+      async fetchDeviceSummary() {
+        const response = await fetch('/api/devices/summary');
+        if (!response.ok) throw new Error('Failed to fetch device summary');
+        return response.json();
+      }
+
+      async fetchRecentDevices(limit = 5) {
+        const response = await fetch(`/api/devices?limit=${limit}`);
+        if (!response.ok) throw new Error('Failed to fetch devices');
+        return response.json();
+      }
+
+      updateDeviceCounts(summary) {
+        document.getElementById('totalDevices').textContent = summary.total || 0;
+        document.getElementById('onlineDevices').textContent = summary.online || 0;
+        document.getElementById('alarmDevices').textContent = summary.alarms || 0;
+      }
+
+      updateEnergySummary() {
+        // Placeholder - will be updated with real data later
+        document.getElementById('todayEnergy').textContent = '12.5';
+        document.getElementById('totalEnergy').textContent = '2,847';
+      }
+
+      renderDeviceList(devices) {
+        const deviceList = document.getElementById('deviceList');
+        const noDevices = document.getElementById('noDevices');
+
+        if (!devices || devices.length === 0) {
+          deviceList.innerHTML = '';
+          noDevices.style.display = 'block';
+          return;
+        }
+
+        noDevices.style.display = 'none';
+        deviceList.innerHTML = devices.map(device => `
+          <div class="device-card">
+            <div class="device-header">
+              <div class="device-title">${device.plant_name}</div>
+              <span class="badge ${device.is_online ? 'badge-online' : 'badge-offline'}">
+                ${device.is_online ? 'Online' : 'Offline'}
+              </span>
+            </div>
+            <div class="text-body-small">
+              <div>Device: ${device.device_sn}</div>
+              <div>Type: ${device.device_type}</div>
+              <div>Location: ${device.country}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      async refreshData() {
+        const refreshIcon = document.getElementById('refreshIcon');
+        refreshIcon.style.animation = 'spin 1s linear infinite';
+        
+        await this.loadDashboardData();
+        
+        setTimeout(() => {
+          refreshIcon.style.animation = '';
+        }, 1000);
+      }
+
+      showLoading(loading) {
+        document.body.classList.toggle('loading', loading);
+      }
+
+      showError(message) {
+        // Simple error display - could be enhanced with toast notifications
+        alert(message);
+      }
+    }
+
+    // Initialize dashboard when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      new Dashboard();
+    });
+  </script>
+</body>
+</html>

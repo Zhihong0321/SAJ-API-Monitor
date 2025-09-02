@@ -1,0 +1,348 @@
+{
+  "accessTokenResponse": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "integer",
+        "description": "Response code (200 for success)"
+      },
+      "msg": {
+        "type": "string",
+        "description": "Response message"
+      },
+      "data": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "JWT access token for API authentication"
+          },
+          "expires": {
+            "type": "integer",
+            "description": "Token expiration time in seconds (28800 = 8 hours)"
+          }
+        },
+        "required": ["access_token", "expires"]
+      }
+    },
+    "required": ["code", "msg", "data"]
+  },
+
+  "deviceListResponse": {
+    "type": "object",
+    "properties": {
+      "total": {
+        "type": "integer",
+        "description": "Total number of devices across all pages"
+      },
+      "rows": {
+        "type": "array",
+        "description": "Array of devices on current page",
+        "items": {
+          "type": "object",
+          "properties": {
+            "deviceSn": {
+              "type": "string",
+              "description": "Device serial number (unique identifier)"
+            },
+            "deviceType": {
+              "type": "string",
+              "description": "Device model type (S12, R5, R6, R6S, etc.)"
+            },
+            "plantId": {
+              "type": "string",
+              "description": "Plant/installation ID"
+            },
+            "plantName": {
+              "type": "string",
+              "description": "Plant/customer name"
+            },
+            "isOnline": {
+              "type": "integer",
+              "description": "Online status (1 = online, 0 = offline)"
+            },
+            "isAlarm": {
+              "type": "integer",
+              "description": "Alarm status (1 = alarm active, 0 = no alarm)"
+            },
+            "country": {
+              "type": "string",
+              "description": "Country where device is installed"
+            }
+          },
+          "required": ["deviceSn", "deviceType", "plantId", "plantName", "isOnline", "isAlarm", "country"]
+        }
+      },
+      "code": {
+        "type": "integer",
+        "description": "Response code (200 for success)"
+      },
+      "msg": {
+        "type": "string",
+        "description": "Response message in Chinese"
+      },
+      "totalPage": {
+        "type": "integer",
+        "description": "Total number of pages available"
+      }
+    },
+    "required": ["total", "rows", "code", "msg", "totalPage"]
+  },
+
+  "realtimeDataResponse": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "integer",
+        "description": "Response code (200 for success)"
+      },
+      "msg": {
+        "type": "string",
+        "description": "Response message"
+      },
+      "data": {
+        "type": "object",
+        "properties": {
+          "deviceSn": {
+            "type": "string",
+            "description": "Device serial number"
+          },
+          "dataTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the data reading"
+          },
+          "updateDate": {
+            "type": "string",
+            "format": "date-time", 
+            "description": "Last update timestamp"
+          },
+          "isOnline": {
+            "type": "string",
+            "description": "Online status (1 = online, 0 = offline)"
+          },
+          "todayPvEnergy": {
+            "type": "string",
+            "description": "Today's PV energy generation in kWh"
+          },
+          "totalPvEnergy": {
+            "type": "string",
+            "description": "Total lifetime PV energy generation in kWh"
+          },
+          "rGridVolt": {
+            "type": "string",
+            "description": "R phase grid voltage in V"
+          },
+          "rGridFreq": {
+            "type": "string",
+            "description": "R phase grid frequency in Hz"
+          },
+          "rGridCurr": {
+            "type": "string",
+            "description": "R phase grid current in A"
+          },
+          "rGridPowerWatt": {
+            "type": "string",
+            "description": "R phase grid power in W"
+          },
+          "sGridVolt": {
+            "type": "string",
+            "description": "S phase grid voltage in V"
+          },
+          "sGridFreq": {
+            "type": "string",
+            "description": "S phase grid frequency in Hz"
+          },
+          "sGridCurr": {
+            "type": "string",
+            "description": "S phase grid current in A"
+          },
+          "sGridPowerWatt": {
+            "type": "string",
+            "description": "S phase grid power in W"
+          },
+          "tGridVolt": {
+            "type": "string",
+            "description": "T phase grid voltage in V"
+          },
+          "tGridCurr": {
+            "type": "string",
+            "description": "T phase grid current in A"
+          },
+          "tGridFreq": {
+            "type": "string",
+            "description": "T phase grid frequency in Hz"
+          },
+          "pv1volt": {
+            "type": "string",
+            "description": "PV string 1 voltage in V"
+          },
+          "pv1curr": {
+            "type": "string",
+            "description": "PV string 1 current in A"
+          },
+          "pv1power": {
+            "type": "string",
+            "description": "PV string 1 power in W"
+          },
+          "pv2volt": {
+            "type": "string",
+            "description": "PV string 2 voltage in V"
+          },
+          "pv2curr": {
+            "type": "string",
+            "description": "PV string 2 current in A"
+          },
+          "pv2power": {
+            "type": "string",
+            "description": "PV string 2 power in W"
+          },
+          "pv3volt": {
+            "type": "string",
+            "description": "PV string 3 voltage in V"
+          },
+          "pv3curr": {
+            "type": "string",
+            "description": "PV string 3 current in A"
+          },
+          "pv3power": {
+            "type": "string",
+            "description": "PV string 3 power in W"
+          },
+          "totalPVPower": {
+            "type": "string",
+            "description": "Total PV power output in W"
+          },
+          "totalLoadPowerWatt": {
+            "type": "string",
+            "description": "Total load power consumption in W"
+          },
+          "totalGridPowerWatt": {
+            "type": "string",
+            "description": "Total grid power in W"
+          },
+          "batTempC": {
+            "type": "string",
+            "description": "Battery temperature in Celsius"
+          },
+          "batEnergyPercent": {
+            "type": "string",
+            "description": "Battery state of charge percentage"
+          },
+          "batPower": {
+            "type": "string",
+            "description": "Battery power in W (positive = charging, negative = discharging)"
+          },
+          "todayLoadEnergy": {
+            "type": "string",
+            "description": "Today's load energy consumption in kWh"
+          },
+          "todayFeedInEnergy": {
+            "type": "string",
+            "description": "Today's feed-in energy to grid in kWh"
+          },
+          "todaySellEnergy": {
+            "type": "string",
+            "description": "Today's energy sold to grid in kWh"
+          },
+          "todayBatDisEnergy": {
+            "type": "string",
+            "description": "Today's battery discharge energy in kWh"
+          },
+          "todayBatChgEnergy": {
+            "type": "string",
+            "description": "Today's battery charge energy in kWh"
+          },
+          "totalFeedInEnergy": {
+            "type": "string",
+            "description": "Total lifetime feed-in energy in kWh"
+          },
+          "totalSellEnergy": {
+            "type": "string",
+            "description": "Total lifetime energy sold in kWh"
+          },
+          "totalBatDisEnergy": {
+            "type": "string",
+            "description": "Total lifetime battery discharge energy in kWh"
+          },
+          "totalBatChgEnergy": {
+            "type": "string",
+            "description": "Total lifetime battery charge energy in kWh"
+          },
+          "invTempC": {
+            "type": "string",
+            "description": "Inverter temperature in Celsius"
+          },
+          "sinkTempC": {
+            "type": "string",
+            "description": "Heat sink temperature in Celsius"
+          },
+          "ambTempC": {
+            "type": "string",
+            "description": "Ambient temperature in Celsius"
+          },
+          "linkSignal": {
+            "type": "string",
+            "description": "Communication signal strength in dBm"
+          },
+          "gridDirection": {
+            "type": "string",
+            "description": "Grid power direction (0 = import, 1 = export)"
+          },
+          "batteryDirection": {
+            "type": "string",
+            "description": "Battery power direction (0 = discharge, 1 = charge)"
+          },
+          "faultMsgList": {
+            "type": "array",
+            "description": "Array of current fault messages",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mfaultMSG": {
+            "type": "string",
+            "description": "Main fault message code"
+          },
+          "hfaultMSG": {
+            "type": "string",
+            "description": "Hardware fault message"
+          },
+          "iso1": {
+            "type": "string",
+            "description": "Isolation resistance 1 in ohms"
+          },
+          "iso2": {
+            "type": "string",
+            "description": "Isolation resistance 2 in ohms"
+          },
+          "iso3": {
+            "type": "string",
+            "description": "Isolation resistance 3 in ohms"
+          },
+          "iso4": {
+            "type": "string",
+            "description": "Isolation resistance 4 in ohms"
+          }
+        },
+        "required": ["deviceSn", "dataTime", "updateDate", "isOnline"]
+      }
+    },
+    "required": ["code", "msg", "data"]
+  },
+
+  "errorResponse": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "integer",
+        "description": "Error code"
+      },
+      "msg": {
+        "type": "string",
+        "description": "Error message"
+      }
+    },
+    "required": ["code", "msg"]
+  }
+}

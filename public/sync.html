@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <title>Sync Devices - SAJ Solar Monitor</title>
+  <link rel="stylesheet" href="/design-system/styles.css">
+  <style>
+    .sync-progress {
+      background-color: var(--color-bg-tertiary);
+      border-radius: var(--radius-md);
+      height: 8px;
+      overflow: hidden;
+      margin: var(--space-4) 0;
+    }
+    
+    .sync-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-primary-500), var(--color-solar-energy));
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    .sync-log {
+      background-color: var(--color-bg-tertiary);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      font-family: var(--font-family-mono);
+      font-size: 0.75rem;
+      max-height: 200px;
+      overflow-y: auto;
+      margin: var(--space-4) 0;
+    }
+    
+    .sync-step {
+      margin-bottom: var(--space-2);
+      padding: var(--space-2);
+      border-radius: var(--radius-sm);
+      background-color: var(--color-bg-secondary);
+    }
+    
+    .sync-step.active {
+      background-color: var(--color-primary-500);
+      color: white;
+    }
+    
+    .sync-step.completed {
+      background-color: var(--color-solar-online);
+      color: white;
+    }
+    
+    .sync-step.error {
+      background-color: var(--color-solar-alarm);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <a href="/" class="btn btn-ghost btn-sm">← Back</a>
+    <h1 class="header-title">Sync Devices</h1>
+    <div></div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <!-- Sync Status Card -->
+    <section class="mb-6">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Device Synchronization</h2>
+          <span id="syncStatus" class="badge badge-offline">Ready</span>
+        </div>
+        <div class="card-content">
+          <p class="text-body-small mb-4">
+            Synchronize your device list with the SAJ API server. This will fetch all registered devices and add new ones to your local database.
+          </p>
+          
+          <!-- Progress Bar -->
+          <div class="sync-progress">
+            <div id="progressBar" class="sync-progress-bar"></div>
+          </div>
+          
+          <!-- Sync Button -->
+          <div class="text-center">
+            <button id="syncBtn" class="btn btn-primary btn-lg">
+              <span id="syncBtnText">Start Sync</span>
+              <span id="syncSpinner" class="spinner" style="display: none;"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sync Steps -->
+    <section class="mb-6">
+      <h3 class="text-h3 mb-4">Sync Progress</h3>
+      <div id="syncSteps">
+        <div class="sync-step" data-step="token">
+          <div class="flex items-center gap-3">
+            <div>🔑</div>
+            <div>
+              <div class="text-body">Get Access Token</div>
+              <div class="text-caption">Authenticating with SAJ API</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="sync-step" data-step="devices">
+          <div class="flex items-center gap-3">
+            <div>📱</div>
+            <div>
+              <div class="text-body">Fetch Device List</div>
+              <div class="text-caption">Retrieving devices from all pages</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="sync-step" data-step="database">
+          <div class="flex items-center gap-3">
+            <div>💾</div>
+            <div>
+              <div class="text-body">Update Database</div>
+              <div class="text-caption">Adding new devices to local storage</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="sync-step" data-step="signatures">
+          <div class="flex items-center gap-3">
+            <div>🔐</div>
+            <div>
+              <div class="text-body">Generate Client Signatures</div>
+              <div class="text-caption">Pre-calculating API signatures</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sync Results -->
+    <section id="syncResults" class="mb-6" style="display: none;">
+      <h3 class="text-h3 mb-4">Sync Results</h3>
+      <div class="card">
+        <div class="card-content">
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="text-center">
+              <div class="energy-value text-h2" id="totalFetched" style="color: var(--color-text-primary);">--</div>
+              <div class="energy-label">Total Fetched</div>
+            </div>
+            <div class="text-center">
+              <div class="energy-value text-h2" id="newDevices" style="color: var(--color-solar-online);">--</div>
+              <div class="energy-label">New Devices</div>
+            </div>
+          </div>
+          
+          <div id="syncResultMessage" class="text-body-small text-center"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sync Log -->
+    <section class="mb-6">
+      <h3 class="text-h3 mb-4">Sync Log</h3>
+      <div id="syncLog" class="sync-log">
+        <div class="text-caption">Ready to start synchronization...</div>
+      </div>
+    </section>
+
+    <!-- Last Sync Info -->
+    <section class="mb-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Last Sync</h3>
+        </div>
+        <div class="card-content">
+          <div id="lastSyncInfo" class="text-body-small">
+            Loading sync history...
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="/" class="nav-item">
+      <div class="nav-icon">🏠</div>
+      <span>Dashboard</span>
+    </a>
+    <a href="/devices" class="nav-item">
+      <div class="nav-icon">📱</div>
+      <span>Devices</span>
+    </a>
+    <a href="/sync" class="nav-item nav-item-active">
+      <div class="nav-icon">🔄</div>
+      <span>Sync</span>
+    </a>
+    <a href="/settings" class="nav-item">
+      <div class="nav-icon">⚙️</div>
+      <span>Settings</span>
+    </a>
+  </nav>
+
+  <script>
+    // Device Sync functionality
+    class DeviceSync {
+      constructor() {
+        this.isRunning = false;
+        this.init();
+      }
+
+      init() {
+        this.setupEventListeners();
+        this.loadLastSyncInfo();
+      }
+
+      setupEventListeners() {
+        const syncBtn = document.getElementById('syncBtn');
+        syncBtn.addEventListener('click', () => this.startSync());
+      }
+
+      async startSync() {
+        if (this.isRunning) return;
+        
+        this.isRunning = true;
+        this.updateSyncButton(true);
+        this.resetProgress();
+        this.logMessage('🚀 Starting device synchronization...');
+
+        try {
+          // Step 1: Get Access Token
+          this.updateStep('token', 'active');
+          this.logMessage('🔑 Requesting access token from SAJ API...');
+          const tokenResult = await this.getAccessToken();
+          this.updateStep('token', 'completed');
+          this.logMessage(`✅ Access token obtained (expires in ${tokenResult.expires/3600} hours)`);
+          this.updateProgress(25);
+
+          // Step 2: Fetch Devices
+          this.updateStep('devices', 'active');
+          this.logMessage('📱 Fetching device list from SAJ API...');
+          const devices = await this.fetchAllDevices(tokenResult.access_token);
+          this.updateStep('devices', 'completed');
+          this.logMessage(`✅ Fetched ${devices.length} devices from API`);
+          this.updateProgress(50);
+
+          // Step 3: Update Database
+          this.updateStep('database', 'active');
+          this.logMessage('💾 Updating local database...');
+          const dbResult = await this.updateDatabase(devices);
+          this.updateStep('database', 'completed');
+          this.logMessage(`✅ Added ${dbResult.newDevices} new devices to database`);
+          this.updateProgress(75);
+
+          // Step 4: Generate Client Signatures
+          this.updateStep('signatures', 'active');
+          this.logMessage('🔐 Generating client signatures for new devices...');
+          await this.generateClientSignatures(dbResult.newDeviceIds);
+          this.updateStep('signatures', 'completed');
+          this.logMessage('✅ Client signatures generated successfully');
+          this.updateProgress(100);
+
+          // Show results
+          this.showResults(devices.length, dbResult.newDevices);
+          this.updateSyncStatus('success', 'Completed');
+          this.logMessage('🎉 Device synchronization completed successfully!');
+
+        } catch (error) {
+          this.handleSyncError(error);
+        } finally {
+          this.isRunning = false;
+          this.updateSyncButton(false);
+        }
+      }
+
+      async getAccessToken() {
+        const response = await fetch('/api/saj/token', {
+          method: 'POST'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to get access token: ${response.statusText}`);
+        }
+        
+        return response.json();
+      }
+
+      async fetchAllDevices(accessToken) {
+        const allDevices = [];
+        let page = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+          this.logMessage(`📄 Fetching page ${page}...`);
+          
+          const response = await fetch(`/api/saj/devices?page=${page}`, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch devices page ${page}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          allDevices.push(...data.rows);
+          
+          this.logMessage(`📄 Page ${page}: ${data.rows.length} devices`);
+          
+          hasMore = page < data.totalPage;
+          page++;
+        }
+
+        return allDevices;
+      }
+
+      async updateDatabase(devices) {
+        const response = await fetch('/api/devices/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ devices })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to update database: ${response.statusText}`);
+        }
+
+        return response.json();
+      }
+
+      async generateClientSignatures(deviceIds) {
+        if (deviceIds.length === 0) return;
+
+        const response = await fetch('/api/devices/generate-signatures', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ deviceIds })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to generate client signatures: ${response.statusText}`);
+        }
+      }
+
+      handleSyncError(error) {
+        console.error('Sync error:', error);
+        this.logMessage(`❌ Error: ${error.message}`);
+        this.updateSyncStatus('error', 'Failed');
+        
+        // Mark current step as error
+        const activeStep = document.querySelector('.sync-step.active');
+        if (activeStep) {
+          this.updateStep(activeStep.dataset.step, 'error');
+        }
+      }
+
+      updateSyncButton(syncing) {
+        const btn = document.getElementById('syncBtn');
+        const btnText = document.getElementById('syncBtnText');
+        const spinner = document.getElementById('syncSpinner');
+
+        btn.disabled = syncing;
+        btnText.textContent = syncing ? 'Syncing...' : 'Start Sync';
+        spinner.style.display = syncing ? 'inline-block' : 'none';
+      }
+
+      updateStep(stepName, status) {
+        const step = document.querySelector(`[data-step="${stepName}"]`);
+        if (step) {
+          step.className = `sync-step ${status}`;
+        }
+      }
+
+      resetProgress() {
+        document.getElementById('progressBar').style.width = '0%';
+        document.getElementById('syncResults').style.display = 'none';
+        
+        // Reset all steps
+        document.querySelectorAll('.sync-step').forEach(step => {
+          step.className = 'sync-step';
+        });
+      }
+
+      updateProgress(percent) {
+        document.getElementById('progressBar').style.width = `${percent}%`;
+      }
+
+      updateSyncStatus(type, text) {
+        const status = document.getElementById('syncStatus');
+        status.textContent = text;
+        status.className = `badge badge-${type === 'success' ? 'online' : type === 'error' ? 'alarm' : 'offline'}`;
+      }
+
+      showResults(totalFetched, newDevices) {
+        document.getElementById('totalFetched').textContent = totalFetched;
+        document.getElementById('newDevices').textContent = newDevices;
+        document.getElementById('syncResultMessage').textContent = 
+          `Successfully synchronized ${totalFetched} devices. ${newDevices} new devices were added to your system.`;
+        document.getElementById('syncResults').style.display = 'block';
+      }
+
+      logMessage(message) {
+        const log = document.getElementById('syncLog');
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = document.createElement('div');
+        logEntry.innerHTML = `<span class="text-muted">${timestamp}</span> ${message}`;
+        log.appendChild(logEntry);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      async loadLastSyncInfo() {
+        try {
+          const response = await fetch('/api/sync/history?limit=1');
+          if (response.ok) {
+            const history = await response.json();
+            if (history.length > 0) {
+              const lastSync = history[0];
+              const date = new Date(lastSync.sync_completed_at || lastSync.sync_started_at).toLocaleString();
+              document.getElementById('lastSyncInfo').innerHTML = `
+                <div><strong>Last sync:</strong> ${date}</div>
+                <div><strong>Status:</strong> ${lastSync.success ? '✅ Success' : '❌ Failed'}</div>
+                <div><strong>Devices added:</strong> ${lastSync.new_devices_added || 0}</div>
+                ${lastSync.error_message ? `<div class="text-error">Error: ${lastSync.error_message}</div>` : ''}
+              `;
+            } else {
+              document.getElementById('lastSyncInfo').textContent = 'No previous sync found.';
+            }
+          }
+        } catch (error) {
+          document.getElementById('lastSyncInfo').textContent = 'Failed to load sync history.';
+        }
+      }
+    }
+
+    // Initialize sync page when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      new DeviceSync();
+    });
+  </script>
+</body>
+</html>
