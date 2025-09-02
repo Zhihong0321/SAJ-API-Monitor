@@ -66,7 +66,11 @@ app.get('/sync', (req, res) => {
 });
 
 app.get('/devices', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html')); // Will create devices.html later
+  res.sendFile(path.join(__dirname, 'public', 'devices.html'));
+});
+
+app.get('/device/:deviceSn', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'device.html'));
 });
 
 app.get('/settings', (req, res) => {

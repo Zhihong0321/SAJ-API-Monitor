@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <title>Device Details - SAJ Solar Monitor</title>
+  <link rel="stylesheet" href="/design-system/styles.css">
+  <style>
+    body {
+      padding-bottom: 80px;
+    }
+
+    .device-header {
+      background: var(--color-bg-secondary);
+      padding: var(--space-4);
+      margin: -16px -16px var(--space-4) -16px;
+      border-bottom: 1px solid var(--color-bg-tertiary);
+    }
+
+    .device-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-1);
+    }
+
+    .device-subtitle {
+      color: var(--color-text-secondary);
+      font-size: 14px;
+    }
+
+    .chart-container {
+      background: var(--color-bg-secondary);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      margin-bottom: var(--space-4);
+      border: 1px solid var(--color-bg-tertiary);
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-3);
+    }
+
+    .chart-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .chart-period {
+      color: var(--color-text-secondary);
+      font-size: 12px;
+    }
+
+    .chart-placeholder {
+      height: 200px;
+      background: linear-gradient(135deg, var(--color-bg-tertiary), var(--color-bg-primary));
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      border: 2px dashed var(--color-bg-tertiary);
+    }
+
+    .energy-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+
+    .stat-card {
+      background: var(--color-bg-secondary);
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      text-align: center;
+      border: 1px solid var(--color-bg-tertiary);
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--color-solar-energy);
+      margin-bottom: var(--space-1);
+    }
+
+    .stat-label {
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .loading {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .error-state {
+      text-align: center;
+      padding: var(--space-8);
+      color: var(--color-text-secondary);
+    }
+
+    .back-button {
+      position: absolute;
+      left: var(--space-4);
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <a href="/devices" class="back-button">←</a>
+    <h1 class="header-title">📊 Device Details</h1>
+    <button id="refreshBtn" class="btn btn-ghost btn-sm">
+      <span id="refreshIcon">🔄</span>
+    </button>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <!-- Device Info -->
+    <section class="mb-6">
+      <div class="device-header">
+        <div>
+          <div class="device-title" id="deviceName">Loading...</div>
+          <div class="device-subtitle" id="deviceInfo">Loading device information...</div>
+        </div>
+        <div id="deviceStatus" class="badge badge-online">Online</div>
+      </div>
+    </section>
+
+    <!-- Energy Statistics -->
+    <section class="mb-6">
+      <div class="energy-stats">
+        <div class="stat-card">
+          <div class="stat-value" id="todayEnergy">--</div>
+          <div class="stat-label">Today (kWh)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalEnergy">--</div>
+          <div class="stat-label">Total (kWh)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Historical Charts -->
+    <section class="mb-6">
+      <h3 class="text-h3 mb-4">Historical Data</h3>
+
+      <!-- Yesterday Chart -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">📅 Yesterday</div>
+            <div class="chart-period" id="yesterdayPeriod">Loading...</div>
+          </div>
+          <button id="refreshYesterday" class="btn btn-ghost btn-sm">🔄</button>
+        </div>
+        <div class="chart-placeholder" id="yesterdayChart">
+          <div>📊 Loading yesterday's data...</div>
+        </div>
+      </div>
+
+      <!-- Last 7 Days Chart -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">📈 Last 7 Days</div>
+            <div class="chart-period" id="weekPeriod">Loading...</div>
+          </div>
+          <button id="refreshWeek" class="btn btn-ghost btn-sm">🔄</button>
+        </div>
+        <div class="chart-placeholder" id="weekChart">
+          <div>📊 Loading 7-day data...</div>
+        </div>
+      </div>
+
+      <!-- Last Month Chart -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">📊 Last Month</div>
+            <div class="chart-period" id="monthPeriod">Loading...</div>
+          </div>
+          <button id="refreshMonth" class="btn btn-ghost btn-sm">🔄</button>
+        </div>
+        <div class="chart-placeholder" id="monthChart">
+          <div>📊 Loading monthly data...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Error State -->
+    <div id="errorState" class="error-state" style="display: none;">
+      <p>Unable to load device data. Please check the device SN and try again.</p>
+      <button id="retryBtn" class="btn btn-primary mt-4">Retry</button>
+    </div>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="/" class="nav-item">
+      <div class="nav-icon">🏠</div>
+      <span>Dashboard</span>
+    </a>
+    <a href="/devices" class="nav-item nav-item-active">
+      <div class="nav-icon">📱</div>
+      <span>Devices</span>
+    </a>
+    <a href="/sync" class="nav-item">
+      <div class="nav-icon">🔄</div>
+      <span>Sync</span>
+    </a>
+    <a href="/settings" class="nav-item">
+      <div class="nav-icon">⚙️</div>
+      <span>Settings</span>
+    </a>
+  </nav>
+
+  <script>
+    // Device Details functionality
+    class DeviceDetails {
+      constructor() {
+        this.deviceSn = this.getDeviceSnFromUrl();
+        this.init();
+      }
+
+      getDeviceSnFromUrl() {
+        const path = window.location.pathname;
+        const match = path.match(/\/device\/(.+)/);
+        return match ? match[1] : null;
+      }
+
+      async init() {
+        if (!this.deviceSn) {
+          this.showError('Invalid device SN');
+          return;
+        }
+
+        await this.loadDeviceData();
+        this.setupEventListeners();
+      }
+
+      setupEventListeners() {
+        const refreshBtn = document.getElementById('refreshBtn');
+        refreshBtn.addEventListener('click', () => this.refreshAllData());
+
+        // Individual chart refresh buttons
+        document.getElementById('refreshYesterday').addEventListener('click', () => this.loadYesterdayChart());
+        document.getElementById('refreshWeek').addEventListener('click', () => this.loadWeekChart());
+        document.getElementById('refreshMonth').addEventListener('click', () => this.loadMonthChart());
+
+        // Retry button
+        document.getElementById('retryBtn').addEventListener('click', () => this.init());
+      }
+
+      async loadDeviceData() {
+        try {
+          this.showLoading(true);
+
+          // Load device info
+          await this.loadDeviceInfo();
+
+          // Load all charts
+          await Promise.all([
+            this.loadYesterdayChart(),
+            this.loadWeekChart(),
+            this.loadMonthChart()
+          ]);
+
+        } catch (error) {
+          console.error('Failed to load device data:', error);
+          this.showError('Failed to load device data');
+        } finally {
+          this.showLoading(false);
+        }
+      }
+
+      async loadDeviceInfo() {
+        try {
+          // Get device info from our database
+          const response = await fetch(`/api/devices/${this.deviceSn}`);
+          if (!response.ok) throw new Error('Device not found');
+
+          const device = await response.json();
+          this.updateDeviceInfo(device);
+
+          // Also try to get real-time data for current stats
+          await this.loadRealtimeData();
+
+        } catch (error) {
+          console.error('Failed to load device info:', error);
+          // Try to get basic info from URL parameter
+          document.getElementById('deviceName').textContent = `Device ${this.deviceSn}`;
+          document.getElementById('deviceInfo').textContent = 'Device information not available';
+        }
+      }
+
+      async loadRealtimeData() {
+        try {
+          const response = await fetch(`/api/devices/${this.deviceSn}/realtime`);
+          if (response.ok) {
+            const realtimeData = await response.json();
+            this.updateRealtimeStats(realtimeData);
+          }
+        } catch (error) {
+          console.log('Real-time data not available, using placeholder');
+          // Keep placeholder values
+        }
+      }
+
+      async loadYesterdayChart() {
+        try {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+
+          const startTime = yesterday.toISOString().slice(0, 19).replace('T', ' ');
+          const endTime = new Date(yesterday.getTime() + 24 * 60 * 60 * 1000 - 1000).toISOString().slice(0, 19).replace('T', ' ');
+
+          const response = await fetch(`/api/devices/${this.deviceSn}/historical?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`);
+
+          if (response.ok) {
+            const data = await response.json();
+            this.renderChart('yesterdayChart', data, 'Yesterday\'s Generation');
+            document.getElementById('yesterdayPeriod').textContent = yesterday.toLocaleDateString();
+          } else {
+            this.showChartError('yesterdayChart', 'Failed to load yesterday\'s data');
+          }
+        } catch (error) {
+          console.error('Failed to load yesterday chart:', error);
+          this.showChartError('yesterdayChart', 'Error loading yesterday\'s data');
+        }
+      }
+
+      async loadWeekChart() {
+        try {
+          const endDate = new Date();
+          const startDate = new Date();
+          startDate.setDate(endDate.getDate() - 7);
+
+          const startTime = startDate.toISOString().slice(0, 19).replace('T', ' ');
+          const endTime = endDate.toISOString().slice(0, 19).replace('T', ' ');
+
+          const response = await fetch(`/api/devices/${this.deviceSn}/historical?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`);
+
+          if (response.ok) {
+            const data = await response.json();
+            this.renderChart('weekChart', data, '7-Day Generation Trend');
+            document.getElementById('weekPeriod').textContent = `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+          } else {
+            this.showChartError('weekChart', 'Failed to load 7-day data');
+          }
+        } catch (error) {
+          console.error('Failed to load week chart:', error);
+          this.showChartError('weekChart', 'Error loading 7-day data');
+        }
+      }
+
+      async loadMonthChart() {
+        try {
+          const endDate = new Date();
+          const startDate = new Date();
+          startDate.setDate(endDate.getDate() - 30);
+
+          const startTime = startDate.toISOString().slice(0, 19).replace('T', ' ');
+          const endTime = endDate.toISOString().slice(0, 19).replace('T', ' ');
+
+          const response = await fetch(`/api/devices/${this.deviceSn}/historical?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`);
+
+          if (response.ok) {
+            const data = await response.json();
+            this.renderChart('monthChart', data, '30-Day Generation Trend');
+            document.getElementById('monthPeriod').textContent = `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+          } else {
+            this.showChartError('monthChart', 'Failed to load monthly data');
+          }
+        } catch (error) {
+          console.error('Failed to load month chart:', error);
+          this.showChartError('monthChart', 'Error loading monthly data');
+        }
+      }
+
+      updateDeviceInfo(device) {
+        document.getElementById('deviceName').textContent = device.plant_name || `Device ${device.device_sn}`;
+        document.getElementById('deviceInfo').textContent = `${device.device_type} • ${device.country}`;
+
+        const statusElement = document.getElementById('deviceStatus');
+        if (device.is_alarm) {
+          statusElement.textContent = 'Alarm';
+          statusElement.className = 'badge badge-alarm';
+        } else {
+          statusElement.textContent = device.is_online ? 'Online' : 'Offline';
+          statusElement.className = `badge ${device.is_online ? 'badge-online' : 'badge-offline'}`;
+        }
+      }
+
+      updateRealtimeStats(realtimeData) {
+        if (realtimeData.todayPvEnergy) {
+          document.getElementById('todayEnergy').textContent = parseFloat(realtimeData.todayPvEnergy).toFixed(2);
+        }
+        if (realtimeData.totalPvEnergy) {
+          document.getElementById('totalEnergy').textContent = parseFloat(realtimeData.totalPvEnergy).toFixed(1);
+        }
+      }
+
+      renderChart(chartId, data, title) {
+        const chartElement = document.getElementById(chartId);
+
+        if (!data || !data.data || data.data.length === 0) {
+          chartElement.innerHTML = '<div>📊 No data available for this period</div>';
+          return;
+        }
+
+        // Simple bar chart visualization
+        const maxPower = Math.max(...data.data.map(d => parseFloat(d.totalPVPower) || 0));
+        const chartHeight = 150;
+
+        let chartHTML = `<div style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 8px;">${title} (${data.data.length} data points)</div>`;
+
+        // Create a simple ASCII-style chart
+        data.data.forEach((point, index) => {
+          if (index % Math.ceil(data.data.length / 20) === 0) { // Show every nth point to avoid overcrowding
+            const power = parseFloat(point.totalPVPower) || 0;
+            const barHeight = Math.round((power / maxPower) * chartHeight);
+            const time = new Date(point.dataTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+            chartHTML += `
+              <div style="display: flex; align-items: end; margin-bottom: 2px; height: 20px;">
+                <div style="width: 40px; font-size: 10px; color: var(--color-text-secondary);">${time}</div>
+                <div style="flex: 1; background: var(--color-bg-tertiary); height: 12px; border-radius: 2px; margin-right: 8px;">
+                  <div style="background: var(--color-solar-energy); height: 12px; width: ${(power / maxPower) * 100}%; border-radius: 2px;"></div>
+                </div>
+                <div style="width: 35px; font-size: 10px; color: var(--color-text-primary); text-align: right;">${power.toFixed(0)}W</div>
+              </div>
+            `;
+          }
+        });
+
+        chartElement.innerHTML = chartHTML;
+      }
+
+      showChartError(chartId, message) {
+        const chartElement = document.getElementById(chartId);
+        chartElement.innerHTML = `<div style="color: var(--color-solar-alarm);">⚠️ ${message}</div>`;
+      }
+
+      async refreshAllData() {
+        const refreshIcon = document.getElementById('refreshIcon');
+        refreshIcon.style.animation = 'spin 1s linear infinite';
+
+        await this.loadDeviceData();
+
+        setTimeout(() => {
+          refreshIcon.style.animation = '';
+        }, 1000);
+      }
+
+      showLoading(loading) {
+        document.body.classList.toggle('loading', loading);
+      }
+
+      showError(message) {
+        document.getElementById('errorState').style.display = 'block';
+        document.querySelector('main').style.display = 'none';
+        console.error(message);
+      }
+    }
+
+    // Initialize device details when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      new DeviceDetails();
+    });
+  </script>
+</body>
+</html>

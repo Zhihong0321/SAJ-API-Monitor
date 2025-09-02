@@ -321,25 +321,182 @@ router.get('/devices/summary', async (req, res) => {
 // Get sync history
 router.get('/sync/history', async (req, res) => {
   const client = await getDBClient();
-  
+
   try {
     await client.connect();
     const limit = parseInt(req.query.limit) || 10;
-    
+
     const result = await client.query(`
-      SELECT * FROM saj_sync_history 
-      ORDER BY sync_started_at DESC 
+      SELECT * FROM saj_sync_history
+      ORDER BY sync_started_at DESC
       LIMIT $1
     `, [limit]);
-    
+
     res.json(result.rows);
-    
+
   } catch (error) {
     console.error('❌ Failed to fetch sync history:', error.message);
     res.status(500).json({ error: 'Failed to fetch sync history', message: error.message });
-    
+
   } finally {
     await client.end();
+  }
+});
+
+// =====================================================
+// HISTORICAL DATA ENDPOINTS
+// =====================================================
+
+// Get specific device by SN
+router.get('/devices/:deviceSn', async (req, res) => {
+  const client = await getDBClient();
+  const { deviceSn } = req.params;
+
+  try {
+    await client.connect();
+
+    const result = await client.query(
+      'SELECT * FROM saj_devices WHERE device_sn = $1',
+      [deviceSn]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Device not found' });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (error) {
+    console.error('❌ Failed to fetch device:', error.message);
+    res.status(500).json({ error: 'Failed to fetch device', message: error.message });
+
+  } finally {
+    await client.end();
+  }
+});
+
+// Get real-time data for specific device
+router.get('/devices/:deviceSn/realtime', async (req, res) => {
+  const { deviceSn } = req.params;
+
+  try {
+    console.log(`📊 Getting real-time data for device: ${deviceSn}`);
+
+    // Get access token first
+    const tokenResponse = await axios.get(`${SAJ_CONFIG.baseUrl}/access_token`, {
+      params: {
+        appId: SAJ_CONFIG.appId,
+        appSecret: SAJ_CONFIG.appSecret
+      },
+      headers: SAJ_CONFIG.headers
+    });
+
+    if (tokenResponse.data.code !== 200) {
+      throw new Error('Failed to get access token');
+    }
+
+    const accessToken = tokenResponse.data.data.access_token;
+    const clientSign = generateClientSign(deviceSn);
+
+    // Get real-time data
+    const response = await axios.get(`${SAJ_CONFIG.baseUrl}/device/realtimeDataCommon`, {
+      params: { deviceSn },
+      headers: {
+        ...SAJ_CONFIG.headers,
+        accessToken: accessToken,
+        clientSign: clientSign
+      },
+      timeout: 15000
+    });
+
+    if (response.data.code === 200) {
+      console.log('✅ Real-time data retrieved');
+      res.json(response.data.data);
+    } else {
+      console.log(`❌ API returned error: ${response.data.msg}`);
+      res.status(500).json({ error: 'Failed to get real-time data', message: response.data.msg });
+    }
+
+  } catch (error) {
+    console.error('❌ Failed to get real-time data:', error.message);
+    res.status(500).json({ error: 'Failed to get real-time data', message: error.message });
+  }
+});
+
+// Get historical data for specific device
+router.get('/devices/:deviceSn/historical', async (req, res) => {
+  const { deviceSn } = req.params;
+  const { startTime, endTime } = req.query;
+
+  if (!startTime || !endTime) {
+    return res.status(400).json({
+      error: 'Missing required parameters',
+      message: 'startTime and endTime are required'
+    });
+  }
+
+  try {
+    console.log(`📊 Getting historical data for device: ${deviceSn}`);
+    console.log(`📅 Date range: ${startTime} to ${endTime}`);
+
+    // Get access token first
+    const tokenResponse = await axios.get(`${SAJ_CONFIG.baseUrl}/access_token`, {
+      params: {
+        appId: SAJ_CONFIG.appId,
+        appSecret: SAJ_CONFIG.appSecret
+      },
+      headers: SAJ_CONFIG.headers
+    });
+
+    if (tokenResponse.data.code !== 200) {
+      throw new Error('Failed to get access token');
+    }
+
+    const accessToken = tokenResponse.data.data.access_token;
+    const clientSign = generateClientSign(deviceSn);
+
+    // Get historical data
+    const response = await axios.get(`${SAJ_CONFIG.baseUrl}/device/historyDataCommon`, {
+      params: {
+        deviceSn,
+        startTime,
+        endTime
+      },
+      headers: {
+        ...SAJ_CONFIG.headers,
+        accessToken: accessToken,
+        clientSign: clientSign
+      },
+      timeout: 30000 // Longer timeout for historical data
+    });
+
+    if (response.data.code === 200) {
+      console.log(`✅ Historical data retrieved: ${response.data.data ? response.data.data.length : 0} data points`);
+      res.json(response.data);
+    } else {
+      console.log(`❌ API returned error: ${response.data.msg}`);
+      res.status(response.data.code || 500).json({
+        error: 'Failed to get historical data',
+        message: response.data.msg,
+        code: response.data.code
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Failed to get historical data:', error.message);
+
+    if (error.response) {
+      res.status(error.response.status).json({
+        error: 'SAJ API Error',
+        message: error.response.data?.msg || error.message,
+        status: error.response.status
+      });
+    } else {
+      res.status(500).json({
+        error: 'Failed to get historical data',
+        message: error.message
+      });
+    }
   }
 });
 
