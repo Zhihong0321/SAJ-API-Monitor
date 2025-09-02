@@ -368,8 +368,20 @@
           startDate.setDate(endDate.getDate() - 7);
           startDate.setHours(0, 0, 0, 0); // Start of 7 days ago
 
-          const startTime = startDate.toISOString().slice(0, 19).replace('T', ' ');
-          const endTime = endDate.toISOString().slice(0, 19).replace('T', ' ');
+          // Use local time formatting instead of ISO (UTC) to match yesterday chart
+          const startTime = startDate.getFullYear() + '-' + 
+            String(startDate.getMonth() + 1).padStart(2, '0') + '-' + 
+            String(startDate.getDate()).padStart(2, '0') + ' ' +
+            String(startDate.getHours()).padStart(2, '0') + ':' +
+            String(startDate.getMinutes()).padStart(2, '0') + ':' +
+            String(startDate.getSeconds()).padStart(2, '0');
+          
+          const endTime = endDate.getFullYear() + '-' + 
+            String(endDate.getMonth() + 1).padStart(2, '0') + '-' + 
+            String(endDate.getDate()).padStart(2, '0') + ' ' +
+            String(endDate.getHours()).padStart(2, '0') + ':' +
+            String(endDate.getMinutes()).padStart(2, '0') + ':' +
+            String(endDate.getSeconds()).padStart(2, '0');
 
           console.log(`📊 Loading 7-day chart: ${startTime} to ${endTime}`);
 
@@ -405,8 +417,20 @@
           startDate.setDate(endDate.getDate() - 30);
           startDate.setHours(0, 0, 0, 0); // Start of 30 days ago
 
-          const startTime = startDate.toISOString().slice(0, 19).replace('T', ' ');
-          const endTime = endDate.toISOString().slice(0, 19).replace('T', ' ');
+          // Use local time formatting instead of ISO (UTC) to match yesterday chart
+          const startTime = startDate.getFullYear() + '-' + 
+            String(startDate.getMonth() + 1).padStart(2, '0') + '-' + 
+            String(startDate.getDate()).padStart(2, '0') + ' ' +
+            String(startDate.getHours()).padStart(2, '0') + ':' +
+            String(startDate.getMinutes()).padStart(2, '0') + ':' +
+            String(startDate.getSeconds()).padStart(2, '0');
+          
+          const endTime = endDate.getFullYear() + '-' + 
+            String(endDate.getMonth() + 1).padStart(2, '0') + '-' + 
+            String(endDate.getDate()).padStart(2, '0') + ' ' +
+            String(endDate.getHours()).padStart(2, '0') + ':' +
+            String(endDate.getMinutes()).padStart(2, '0') + ':' +
+            String(endDate.getSeconds()).padStart(2, '0');
 
           console.log(`📊 Loading 30-day chart: ${startTime} to ${endTime}`);
 
