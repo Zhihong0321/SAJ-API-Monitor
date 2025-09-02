@@ -43,6 +43,7 @@
     <button onclick="testApiStatus()">Test API Status</button>
     <button onclick="testHealthCheck()">Test Health Check</button>
     <button onclick="testDatabaseConnection()">Test Database</button>
+    <button onclick="runMigration()">Run Database Migration</button>
     <div id="basicTests" class="log"></div>
   </div>
 
@@ -127,6 +128,22 @@
         }
       } catch (error) {
         logToDiv('basicTests', `❌ Database Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function runMigration() {
+      logToDiv('basicTests', 'Running database migrations...', 'info');
+      try {
+        const response = await fetch('/migrate');
+        const data = await response.json();
+        
+        if (response.ok) {
+          logToDiv('basicTests', `✅ Migration Success: ${data.message}`, 'success');
+        } else {
+          logToDiv('basicTests', `❌ Migration Failed: ${data.message}`, 'error');
+        }
+      } catch (error) {
+        logToDiv('basicTests', `❌ Migration Error: ${error.message}`, 'error');
       }
     }
 

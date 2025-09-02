@@ -78,6 +78,28 @@ app.get('/debug', (req, res) => {
   res.sendFile(path.join(__dirname, 'debug-sync.html'));
 });
 
+// Manual migration endpoint for fixing database issues
+app.get('/migrate', async (req, res) => {
+  try {
+    console.log('🗄️ Manual migration requested...');
+    const { runMigrations } = require('./database/migrate.js');
+    await runMigrations();
+    res.json({ 
+      success: true, 
+      message: 'Database migrations completed successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Manual migration failed:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Migration failed', 
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // API Status endpoint for testing
 app.get('/api/status', (req, res) => {
   res.json({
