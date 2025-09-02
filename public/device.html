@@ -426,7 +426,7 @@
         // Check if data exists and has the correct structure
         if (!data || data.code !== 200) {
           console.error(`Invalid data format for ${chartId}:`, data);
-          chartElement.innerHTML = '<div>❌ Invalid data format</div>';
+          chartElement.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444;">❌ Invalid data format</div>';
           return;
         }
 
@@ -442,7 +442,7 @@
         }
 
         if (dataPoints.length === 0) {
-          chartElement.innerHTML = '<div>📊 No data available for this period</div>';
+          chartElement.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;">📊 No data available for this period</div>';
           return;
         }
 
@@ -450,44 +450,83 @@
         const maxPower = Math.max(...dataPoints.map(d => parseFloat(d.totalPVPower) || 0));
 
         if (maxPower === 0) {
-          chartElement.innerHTML = '<div>📊 No power generation data available</div>';
+          chartElement.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;">📊 No power generation data available</div>';
           return;
         }
 
-        const chartHeight = 150;
-        let chartHTML = `<div style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 8px;">${title} (${dataPoints.length} data points)</div>`;
+        // Create a proper visual chart with CSS styling
+        let chartHTML = `
+          <div style="padding: 16px; background: #1e293b; border-radius: 8px; margin: 8px 0;">
+            <div style="font-size: 14px; color: #94a3b8; margin-bottom: 16px; text-align: center;">
+              ${title} (${dataPoints.length} data points)
+            </div>
+            <div style="position: relative; height: 200px; margin-bottom: 16px;">
+        `;
 
-        // Create a simple bar chart
-        dataPoints.forEach((point, index) => {
-          // For large datasets, sample every nth point to avoid overcrowding
-          const sampleRate = Math.ceil(dataPoints.length / 20);
-          if (index % sampleRate === 0) {
-            const power = parseFloat(point.totalPVPower) || 0;
-            const time = new Date(point.dataTime).toLocaleTimeString('en-US', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: false
-            });
+        // Sample data points for visualization (max 24 points to avoid overcrowding)
+        const sampleRate = Math.max(1, Math.ceil(dataPoints.length / 24));
+        const sampledPoints = dataPoints.filter((_, index) => index % sampleRate === 0);
 
-            chartHTML += `
-              <div style="display: flex; align-items: end; margin-bottom: 2px; height: 20px;">
-                <div style="width: 40px; font-size: 10px; color: var(--color-text-secondary);">${time}</div>
-                <div style="flex: 1; background: var(--color-bg-tertiary); height: 12px; border-radius: 2px; margin-right: 8px;">
-                  <div style="background: var(--color-solar-energy); height: 12px; width: ${(power / maxPower) * 100}%; border-radius: 2px;"></div>
-                </div>
-                <div style="width: 35px; font-size: 10px; color: var(--color-text-primary); text-align: right;">${power.toFixed(0)}W</div>
-              </div>
-            `;
-          }
+        // Create vertical bar chart
+        const barWidth = Math.max(8, Math.min(24, Math.floor(100 / sampledPoints.length)));
+        
+        sampledPoints.forEach((point, index) => {
+          const power = parseFloat(point.totalPVPower) || 0;
+          const barHeight = Math.max(2, (power / maxPower) * 160); // 160px max height
+          const leftPos = (index * (100 / sampledPoints.length));
+          
+          const time = new Date(point.dataTime);
+          const timeStr = time.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          });
+
+          chartHTML += `
+            <div style="
+              position: absolute;
+              bottom: 0;
+              left: ${leftPos}%;
+              width: ${barWidth}px;
+              height: ${barHeight}px;
+              background: linear-gradient(to top, #f97316, #facc15);
+              border-radius: 2px 2px 0 0;
+              transition: opacity 0.2s;
+            " 
+            title="${timeStr}: ${power.toFixed(0)}W"></div>
+            
+            <div style="
+              position: absolute;
+              bottom: -20px;
+              left: ${leftPos}%;
+              width: ${barWidth}px;
+              font-size: 8px;
+              color: #64748b;
+              text-align: center;
+              transform: rotate(-45deg);
+              transform-origin: center;
+            ">${timeStr}</div>
+          `;
         });
 
-        // Add summary statistics
-        const avgPower = dataPoints.reduce((sum, d) => sum + (parseFloat(d.totalPVPower) || 0), 0) / dataPoints.length;
-        const totalEnergy = dataPoints.reduce((sum, d) => sum + (parseFloat(d.todayPvEnergy) || 0), 0);
-
         chartHTML += `
-          <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--color-bg-tertiary); font-size: 11px; color: var(--color-text-secondary);">
-            <div>Avg Power: ${avgPower.toFixed(0)}W | Peak: ${maxPower.toFixed(0)}W | Total Energy: ${totalEnergy.toFixed(2)}kWh</div>
+            </div>
+            
+            <!-- Chart Summary -->
+            <div style="
+              border-top: 1px solid #334155; 
+              padding-top: 12px; 
+              font-size: 12px; 
+              color: #94a3b8;
+              display: flex;
+              justify-content: space-between;
+              flex-wrap: wrap;
+              gap: 8px;
+            ">
+              <span><strong style="color: #facc15;">Peak:</strong> ${maxPower.toFixed(0)}W</span>
+              <span><strong style="color: #facc15;">Avg:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.totalPVPower) || 0), 0) / dataPoints.length).toFixed(0)}W</span>
+              <span><strong style="color: #facc15;">Energy:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.todayPvEnergy) || 0), 0)).toFixed(2)}kWh</span>
+            </div>
           </div>
         `;
 
