@@ -135,3 +135,15 @@ dev-data/
 # Security files
 private/
 secrets/
+
+# Historical data files (test/development only)
+historical-data-*.json
+historical-summary-*.json
+realtime-data-*.json
+filtered-chart-data.json
+power-generation-analysis.json
+
+# Analysis and test scripts
+analyze-historical-data.js
+generate-day-chart*.js
+test-*.js
