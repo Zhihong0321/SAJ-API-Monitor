@@ -30,47 +30,8 @@
   </style>
 </head>
 <body>
-  <!-- Header -->
-  <header class="header">
-    <h1 class="header-title">🌞 SAJ Solar Monitor</h1>
-    <button id="refreshBtn" class="btn btn-ghost btn-sm">
-      <span id="refreshIcon">🔄</span>
-    </button>
-  </header>
-
   <!-- Main Content -->
   <main class="container">
-    <!-- Welcome Section -->
-    <section class="mb-6">
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">Welcome to Solar Monitoring</h2>
-        </div>
-        <div class="card-content">
-          <p class="text-body-small">Monitor your SAJ solar inverter devices in real-time. Track energy generation, device status, and system performance.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Energy Overview -->
-    <section class="mb-6">
-      <h3 class="text-h3 mb-4">Energy Overview</h3>
-      
-      <div class="grid grid-cols-2 gap-4 mb-4">
-        <div class="energy-meter">
-          <div class="energy-value" id="todayEnergy">--</div>
-          <div class="energy-label">Today (kWh)</div>
-        </div>
-        <div class="energy-meter">
-          <div class="energy-value" id="totalEnergy">--</div>
-          <div class="energy-label">Total (kWh)</div>
-        </div>
-      </div>
-
-      <div class="energy-chart" id="energyChart">
-        <span>📊 Energy Generation Chart</span>
-      </div>
-    </section>
 
     <!-- Device Status Overview -->
     <section class="mb-6">
@@ -139,6 +100,10 @@
       <div class="nav-icon">📱</div>
       <span>Devices</span>
     </a>
+    <a href="/offline-devices" class="nav-item">
+      <div class="nav-icon">⚠️</div>
+      <span>Offline</span>
+    </a>
     <a href="/sync" class="nav-item">
       <div class="nav-icon">🔄</div>
       <span>Sync</span>
@@ -162,8 +127,7 @@
       }
 
       setupEventListeners() {
-        const refreshBtn = document.getElementById('refreshBtn');
-        refreshBtn.addEventListener('click', () => this.refreshData());
+        // Refresh functionality removed - no refresh button
       }
 
       async loadDashboardData() {
@@ -177,9 +141,6 @@
           // Load recent devices
           const devices = await this.fetchRecentDevices();
           this.renderDeviceList(devices);
-          
-          // Load energy summary (placeholder for now)
-          this.updateEnergySummary();
           
         } catch (error) {
           console.error('Failed to load dashboard data:', error);
@@ -207,11 +168,6 @@
         document.getElementById('alarmDevices').textContent = summary.alarms || 0;
       }
 
-      updateEnergySummary() {
-        // Placeholder - will be updated with real data later
-        document.getElementById('todayEnergy').textContent = '12.5';
-        document.getElementById('totalEnergy').textContent = '2,847';
-      }
 
       renderDeviceList(devices) {
         const deviceList = document.getElementById('deviceList');
@@ -241,16 +197,6 @@
         `).join('');
       }
 
-      async refreshData() {
-        const refreshIcon = document.getElementById('refreshIcon');
-        refreshIcon.style.animation = 'spin 1s linear infinite';
-        
-        await this.loadDashboardData();
-        
-        setTimeout(() => {
-          refreshIcon.style.animation = '';
-        }, 1000);
-      }
 
       showLoading(loading) {
         document.body.classList.toggle('loading', loading);

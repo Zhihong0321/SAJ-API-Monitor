@@ -1,0 +1,1 @@
+- no localhost testing, always push to github, and then test on railway server

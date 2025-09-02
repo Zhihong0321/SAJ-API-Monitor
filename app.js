@@ -69,6 +69,10 @@ app.get('/devices', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'devices.html'));
 });
 
+app.get('/offline-devices', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'offline-devices.html'));
+});
+
 app.get('/device/:deviceSn', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'device.html'));
 });

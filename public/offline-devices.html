@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0f172a">
-  <title>Devices - SAJ Solar Monitor</title>
+  <title>Offline Devices - SAJ Solar Monitor</title>
   <link rel="stylesheet" href="/design-system/styles.css">
   <style>
     body {
@@ -38,18 +38,8 @@
       font-weight: 500;
     }
 
-    .badge-online {
-      background: var(--color-solar-online);
-      color: white;
-    }
-
     .badge-offline {
       background: var(--color-solar-offline);
-      color: white;
-    }
-
-    .badge-alarm {
-      background: var(--color-solar-alarm);
       color: white;
     }
 
@@ -57,12 +47,6 @@
       color: var(--color-text-secondary);
       font-size: 14px;
       line-height: 1.4;
-    }
-
-    .device-actions {
-      margin-top: var(--space-3);
-      display: flex;
-      gap: var(--space-2);
     }
 
     .loading {
@@ -80,7 +64,7 @@
 <body>
   <!-- Header -->
   <header class="header">
-    <h1 class="header-title">📱 Devices</h1>
+    <h1 class="header-title">📱 Offline Devices</h1>
     <button id="refreshBtn" class="btn btn-ghost btn-sm">
       <span id="refreshIcon">🔄</span>
     </button>
@@ -88,29 +72,18 @@
 
   <!-- Main Content -->
   <main class="container">
-    <!-- Device Summary -->
+    <!-- Offline Device Count -->
     <section class="mb-6">
-      <div class="grid grid-cols-3 gap-3">
-        <div class="card text-center">
-          <div class="energy-value text-h2" id="totalDevices" style="color: var(--color-text-primary);">--</div>
-          <div class="energy-label">Total Devices</div>
-        </div>
-        <div class="card text-center">
-          <div class="energy-value text-h2" id="onlineDevices" style="color: var(--color-solar-online);">--</div>
-          <div class="energy-label">Online</div>
-        </div>
-        <div class="card text-center">
-          <div class="energy-value text-h2" id="alarmDevices" style="color: var(--color-solar-alarm);">--</div>
-          <div class="energy-label">Alarms</div>
-        </div>
+      <div class="card text-center">
+        <div class="energy-value text-h2" id="offlineCount" style="color: var(--color-solar-offline);">--</div>
+        <div class="energy-label">Offline Devices</div>
       </div>
     </section>
 
-    <!-- Device List -->
+    <!-- Offline Device List -->
     <section class="mb-6">
       <div class="card-header">
-        <h3 class="text-h3">Device List</h3>
-        <a href="/sync" class="btn btn-primary btn-sm">Sync Devices</a>
+        <h3 class="text-h3">Offline Device List</h3>
       </div>
 
       <div id="deviceList" class="space-y-3">
@@ -119,14 +92,13 @@
 
       <div id="loadingState" class="card text-center" style="display: none;">
         <div class="card-content">
-          <p class="text-body">Loading devices...</p>
+          <p class="text-body">Loading offline devices...</p>
         </div>
       </div>
 
       <div id="emptyState" class="card text-center" style="display: none;">
         <div class="card-content">
-          <p class="text-body-small mb-4">No devices found. Sync devices from SAJ API to get started.</p>
-          <a href="/sync" class="btn btn-primary">Sync Devices Now</a>
+          <p class="text-body-small mb-4">No offline devices found. All devices are currently online.</p>
         </div>
       </div>
     </section>
@@ -138,11 +110,11 @@
       <div class="nav-icon">🏠</div>
       <span>Dashboard</span>
     </a>
-    <a href="/devices" class="nav-item nav-item-active">
+    <a href="/devices" class="nav-item">
       <div class="nav-icon">📱</div>
       <span>Devices</span>
     </a>
-    <a href="/offline-devices" class="nav-item">
+    <a href="/offline-devices" class="nav-item nav-item-active">
       <div class="nav-icon">⚠️</div>
       <span>Offline</span>
     </a>
@@ -157,14 +129,14 @@
   </nav>
 
   <script>
-    // Device List functionality
-    class DeviceList {
+    // Offline Device List functionality
+    class OfflineDeviceList {
       constructor() {
         this.init();
       }
 
       async init() {
-        await this.loadDeviceData();
+        await this.loadOfflineDevices();
         this.setupEventListeners();
       }
 
@@ -173,42 +145,31 @@
         refreshBtn.addEventListener('click', () => this.refreshData());
       }
 
-      async loadDeviceData() {
+      async loadOfflineDevices() {
         try {
           this.showLoading(true);
 
-          // Load device summary
-          const deviceSummary = await this.fetchDeviceSummary();
-          this.updateDeviceCounts(deviceSummary);
-
-          // Load all devices
-          const devices = await this.fetchAllDevices();
+          // Load offline devices
+          const devices = await this.fetchOfflineDevices();
+          this.updateOfflineCount(devices.length);
           this.renderDeviceList(devices);
 
         } catch (error) {
-          console.error('Failed to load device data:', error);
-          this.showError('Failed to load device data');
+          console.error('Failed to load offline devices:', error);
+          this.showError('Failed to load offline devices');
         } finally {
           this.showLoading(false);
         }
       }
 
-      async fetchDeviceSummary() {
-        const response = await fetch('/api/devices/summary');
-        if (!response.ok) throw new Error('Failed to fetch device summary');
+      async fetchOfflineDevices() {
+        const response = await fetch('/api/devices/offline?limit=100');
+        if (!response.ok) throw new Error('Failed to fetch offline devices');
         return response.json();
       }
 
-      async fetchAllDevices() {
-        const response = await fetch('/api/devices?limit=100'); // Get more devices for the list
-        if (!response.ok) throw new Error('Failed to fetch devices');
-        return response.json();
-      }
-
-      updateDeviceCounts(summary) {
-        document.getElementById('totalDevices').textContent = summary.total || 0;
-        document.getElementById('onlineDevices').textContent = summary.online || 0;
-        document.getElementById('alarmDevices').textContent = summary.alarms || 0;
+      updateOfflineCount(count) {
+        document.getElementById('offlineCount').textContent = count;
       }
 
       renderDeviceList(devices) {
@@ -226,40 +187,46 @@
           <div class="device-card">
             <div class="device-header">
               <div class="device-title">${device.plant_name || 'Unknown Plant'}</div>
-              <span class="badge ${this.getStatusBadge(device)}">
-                ${this.getStatusText(device)}
+              <span class="badge badge-offline">
+                Offline
               </span>
             </div>
             <div class="device-details">
-              <div><strong>Device:</strong> ${device.device_sn}</div>
+              <div><strong>Device SN:</strong> ${device.device_sn}</div>
               <div><strong>Type:</strong> ${device.device_type}</div>
               <div><strong>Location:</strong> ${device.country}</div>
-              <div><strong>Status:</strong> ${device.is_online ? 'Online' : 'Offline'} ${device.is_alarm ? '(Alarm)' : ''}</div>
-            </div>
-            <div class="device-actions">
-              <a href="/device/${device.device_sn}" class="btn btn-primary btn-sm">
-                📊 View Historical Data
-              </a>
+              <div><strong>Last Detection:</strong> ${this.formatLastDetection(device.updated_at)}</div>
             </div>
           </div>
         `).join('');
       }
 
-      getStatusBadge(device) {
-        if (device.is_alarm) return 'badge-alarm';
-        return device.is_online ? 'badge-online' : 'badge-offline';
-      }
+      formatLastDetection(dateString) {
+        if (!dateString) return 'Unknown';
 
-      getStatusText(device) {
-        if (device.is_alarm) return 'Alarm';
-        return device.is_online ? 'Online' : 'Offline';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+        if (diffDays > 0) {
+          return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+        } else if (diffHours > 0) {
+          return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        } else if (diffMinutes > 0) {
+          return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+        } else {
+          return 'Just now';
+        }
       }
 
       async refreshData() {
         const refreshIcon = document.getElementById('refreshIcon');
         refreshIcon.style.animation = 'spin 1s linear infinite';
 
-        await this.loadDeviceData();
+        await this.loadOfflineDevices();
 
         setTimeout(() => {
           refreshIcon.style.animation = '';
@@ -276,9 +243,9 @@
       }
     }
 
-    // Initialize device list when page loads
+    // Initialize offline device list when page loads
     document.addEventListener('DOMContentLoaded', () => {
-      new DeviceList();
+      new OfflineDeviceList();
     });
   </script>
 </body>

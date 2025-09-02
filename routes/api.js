@@ -294,25 +294,59 @@ router.get('/devices', async (req, res) => {
 // Get device summary statistics
 router.get('/devices/summary', async (req, res) => {
   const client = await getDBClient();
-  
+
   try {
     await client.connect();
-    
+
     const result = await client.query(`
-      SELECT 
+      SELECT
         COUNT(*) as total,
         COUNT(CASE WHEN is_online = 1 THEN 1 END) as online,
         COUNT(CASE WHEN is_alarm = 1 THEN 1 END) as alarms,
         COUNT(CASE WHEN is_online = 0 THEN 1 END) as offline
       FROM saj_devices
     `);
-    
+
     res.json(result.rows[0]);
-    
+
   } catch (error) {
     console.error('❌ Failed to get device summary:', error.message);
     res.status(500).json({ error: 'Failed to get device summary', message: error.message });
-    
+
+  } finally {
+    await client.end();
+  }
+});
+
+// Get offline devices
+router.get('/devices/offline', async (req, res) => {
+  const client = await getDBClient();
+
+  try {
+    await client.connect();
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+
+    const result = await client.query(`
+      SELECT
+        device_sn,
+        plant_name,
+        device_type,
+        country,
+        updated_at,
+        created_at
+      FROM saj_devices
+      WHERE is_online = 0
+      ORDER BY updated_at DESC, created_at DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    res.json(result.rows);
+
+  } catch (error) {
+    console.error('❌ Failed to get offline devices:', error.message);
+    res.status(500).json({ error: 'Failed to get offline devices', message: error.message });
+
   } finally {
     await client.end();
   }
