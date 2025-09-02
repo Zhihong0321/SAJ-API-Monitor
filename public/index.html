@@ -94,12 +94,20 @@
       justify-content: center;
       align-items: center;
       transition: all var(--transition-fast);
+      cursor: pointer;
+      user-select: none;
     }
 
     .device-item:hover {
       transform: translateY(-2px);
       box-shadow: var(--shadow-md);
       border-color: var(--color-border-secondary);
+      background: var(--color-bg-tertiary);
+    }
+
+    .device-item:active {
+      transform: translateY(0);
+      box-shadow: var(--shadow-sm);
     }
 
     .device-status {
@@ -302,7 +310,7 @@
         deviceList.innerHTML = `
           <div class="device-grid">
             ${devices.map(device => `
-              <div class="device-item">
+              <div class="device-item" data-device-sn="${device.device_sn}" onclick="dashboard.navigateToDevice('${device.device_sn}')">
                 <div class="device-status">
                   <div class="led-indicator ${device.is_online ? 'led-online' : 'led-offline'}"></div>
                 </div>
@@ -323,11 +331,17 @@
         // Simple error display - could be enhanced with toast notifications
         alert(message);
       }
+
+      navigateToDevice(deviceSn) {
+        // Navigate to the device detail page
+        window.location.href = `/device/${deviceSn}`;
+      }
     }
 
     // Initialize dashboard when page loads
+    let dashboard;
     document.addEventListener('DOMContentLoaded', () => {
-      new Dashboard();
+      dashboard = new Dashboard();
     });
   </script>
 </body>
