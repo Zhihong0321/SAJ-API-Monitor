@@ -455,22 +455,52 @@
         }
 
         // Create smooth area chart with SVG (like reference design)
-        const chartWidth = 100; // percentage
         const chartHeight = 200;
         
-        // Sample data points for smooth visualization (max 50 points for smoothness)
-        const sampleRate = Math.max(1, Math.ceil(dataPoints.length / 50));
-        const sampledPoints = dataPoints.filter((_, index) => index % sampleRate === 0);
+        // Create fixed time grid from 5am to 9pm (16 hours)
+        const createTimeGrid = () => {
+          const startHour = 5; // 5am
+          const endHour = 21;  // 9pm
+          const timePoints = [];
+          
+          for (let hour = startHour; hour <= endHour; hour++) {
+            const timeLabel = `${hour.toString().padStart(2, '0')}:00`;
+            timePoints.push({
+              hour,
+              timeLabel,
+              x: ((hour - startHour) / (endHour - startHour)) * 100,
+              power: 0 // default to 0, will be updated with real data
+            });
+          }
+          
+          return timePoints;
+        };
         
-        // Generate SVG path for smooth curve
+        const timeGrid = createTimeGrid();
+        
+        // Map actual data to time grid
+        dataPoints.forEach(point => {
+          const pointTime = new Date(point.dataTime);
+          const pointHour = pointTime.getHours();
+          const power = parseFloat(point.totalPVPower) || 0;
+          
+          // Find closest hour in our time grid
+          const gridPoint = timeGrid.find(tp => tp.hour === pointHour);
+          if (gridPoint) {
+            gridPoint.power = Math.max(gridPoint.power, power); // Take maximum power for that hour
+          }
+        });
+        
+        // Generate SVG path for smooth curve using time grid
         let pathData = '';
         let areaPath = '';
-        const points = sampledPoints.map((point, index) => {
-          const power = parseFloat(point.totalPVPower) || 0;
-          const x = (index / (sampledPoints.length - 1)) * 100; // percentage
-          const y = ((maxPower - power) / maxPower) * 80 + 10; // 10% padding top/bottom
-          return { x, y, power, time: point.dataTime };
-        });
+        const points = timeGrid.map(gridPoint => ({
+          x: gridPoint.x,
+          y: ((maxPower - gridPoint.power) / maxPower) * 80 + 10, // 10% padding top/bottom
+          power: gridPoint.power,
+          time: gridPoint.timeLabel,
+          hour: gridPoint.hour
+        }));
 
         if (points.length > 0) {
           // Create smooth curve using quadratic bezier curves
@@ -499,7 +529,7 @@
             
             <!-- SVG Chart Container -->
             <div style="position: relative; height: ${chartHeight}px; margin-bottom: 20px; background: #0f172a; border-radius: 8px; padding: 16px;">
-              <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="overflow: visible;">
+              <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="overflow: visible; display: block;">
                 <!-- Grid lines (optional) -->
                 <defs>
                   <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -519,16 +549,16 @@
                 <!-- Data points (dots) -->
                 ${points.map(point => `
                   <circle cx="${point.x}" cy="${point.y}" r="0.4" fill="#2563eb" opacity="0.9">
-                    <title>${new Date(point.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}: ${point.power.toFixed(0)}W</title>
+                    <title>${point.time}: ${point.power.toFixed(0)}W</title>
                   </circle>
                 `).join('')}
               </svg>
               
               <!-- Time labels -->
-              <div style="position: absolute; bottom: -25px; left: 0; right: 0; display: flex; justify-content: space-between;">
-                ${points.filter((_, i) => i % Math.max(1, Math.floor(points.length / 6)) === 0).map(point => `
-                  <span style="font-size: 10px; color: #64748b; transform: translateX(-50%);">
-                    ${new Date(point.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+              <div style="position: absolute; bottom: -25px; left: 16px; right: 16px; display: flex; justify-content: space-between;">
+                ${points.filter((_, i) => i % 3 === 0).map(point => `
+                  <span style="font-size: 10px; color: #64748b; text-align: center; min-width: 30px;">
+                    ${point.time}
                   </span>
                 `).join('')}
               </div>
