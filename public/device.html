@@ -323,76 +323,147 @@
 
       async loadYesterdayChart() {
         try {
+          // Get yesterday's date for daily data (timeUnit=1)
           const yesterday = new Date();
           yesterday.setDate(yesterday.getDate() - 1);
+          yesterday.setHours(0, 0, 0, 0); // Start of yesterday
+
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); // Start of today
 
           const startTime = yesterday.toISOString().slice(0, 19).replace('T', ' ');
-          const endTime = new Date(yesterday.getTime() + 24 * 60 * 60 * 1000 - 1000).toISOString().slice(0, 19).replace('T', ' ');
+          const endTime = today.toISOString().slice(0, 19).replace('T', ' ');
 
-          const response = await fetch(`/api/devices/${this.deviceSn}/historical?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`);
+          console.log(`📊 Loading yesterday chart: ${startTime} to ${endTime}`);
+
+          // Use NEW uploadData API with timeUnit=1 (daily data)
+          const response = await fetch(`/api/devices/${this.deviceSn}/uploadData?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&timeUnit=1`);
 
           if (response.ok) {
             const data = await response.json();
-            console.log('Yesterday data loaded:', data); // Debug log
-            this.renderChart('yesterdayChart', data, 'Yesterday\'s Generation');
+            console.log('✅ Yesterday uploadData loaded:', data);
+            
+            // Transform uploadData format to match chart expectations
+            const transformedData = this.transformUploadData(data, 'daily');
+            this.renderChart('yesterdayChart', transformedData, 'Yesterday\'s Generation');
             document.getElementById('yesterdayPeriod').textContent = yesterday.toLocaleDateString();
           } else {
             const errorText = await response.text();
-            console.error('Yesterday API error:', response.status, errorText);
+            console.error('❌ Yesterday uploadData API error:', response.status, errorText);
             this.showChartError('yesterdayChart', `Failed to load yesterday's data (${response.status})`);
           }
         } catch (error) {
-          console.error('Failed to load yesterday chart:', error);
+          console.error('❌ Failed to load yesterday chart:', error);
           this.showChartError('yesterdayChart', 'Error loading yesterday\'s data');
         }
       }
 
       async loadWeekChart() {
         try {
+          // Get past 7 days for daily data (timeUnit=1)
           const endDate = new Date();
+          endDate.setHours(23, 59, 59, 999); // End of today
+
           const startDate = new Date();
           startDate.setDate(endDate.getDate() - 7);
+          startDate.setHours(0, 0, 0, 0); // Start of 7 days ago
 
           const startTime = startDate.toISOString().slice(0, 19).replace('T', ' ');
           const endTime = endDate.toISOString().slice(0, 19).replace('T', ' ');
 
-          const response = await fetch(`/api/devices/${this.deviceSn}/historical?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`);
+          console.log(`📊 Loading 7-day chart: ${startTime} to ${endTime}`);
+
+          // Use NEW uploadData API with timeUnit=1 (daily data)
+          const response = await fetch(`/api/devices/${this.deviceSn}/uploadData?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&timeUnit=1`);
 
           if (response.ok) {
             const data = await response.json();
-            this.renderChart('weekChart', data, '7-Day Generation Trend');
+            console.log('✅ 7-day uploadData loaded:', data);
+            
+            // Transform uploadData format to match chart expectations
+            const transformedData = this.transformUploadData(data, 'weekly');
+            this.renderChart('weekChart', transformedData, '7-Day Generation Trend');
             document.getElementById('weekPeriod').textContent = `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
           } else {
-            this.showChartError('weekChart', 'Failed to load 7-day data');
+            const errorText = await response.text();
+            console.error('❌ 7-day uploadData API error:', response.status, errorText);
+            this.showChartError('weekChart', `Failed to load 7-day data (${response.status})`);
           }
         } catch (error) {
-          console.error('Failed to load week chart:', error);
+          console.error('❌ Failed to load 7-day chart:', error);
           this.showChartError('weekChart', 'Error loading 7-day data');
         }
       }
 
       async loadMonthChart() {
         try {
+          // Get past 30 days for daily data (timeUnit=1)
           const endDate = new Date();
+          endDate.setHours(23, 59, 59, 999); // End of today
+
           const startDate = new Date();
           startDate.setDate(endDate.getDate() - 30);
+          startDate.setHours(0, 0, 0, 0); // Start of 30 days ago
 
           const startTime = startDate.toISOString().slice(0, 19).replace('T', ' ');
           const endTime = endDate.toISOString().slice(0, 19).replace('T', ' ');
 
-          const response = await fetch(`/api/devices/${this.deviceSn}/historical?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`);
+          console.log(`📊 Loading 30-day chart: ${startTime} to ${endTime}`);
+
+          // Use NEW uploadData API with timeUnit=1 (daily data)
+          const response = await fetch(`/api/devices/${this.deviceSn}/uploadData?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&timeUnit=1`);
 
           if (response.ok) {
             const data = await response.json();
-            this.renderChart('monthChart', data, '30-Day Generation Trend');
+            console.log('✅ 30-day uploadData loaded:', data);
+            
+            // Transform uploadData format to match chart expectations
+            const transformedData = this.transformUploadData(data, 'monthly');
+            this.renderChart('monthChart', transformedData, '30-Day Generation Trend');
             document.getElementById('monthPeriod').textContent = `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
           } else {
-            this.showChartError('monthChart', 'Failed to load monthly data');
+            const errorText = await response.text();
+            console.error('❌ 30-day uploadData API error:', response.status, errorText);
+            this.showChartError('monthChart', `Failed to load monthly data (${response.status})`);
           }
         } catch (error) {
-          console.error('Failed to load month chart:', error);
+          console.error('❌ Failed to load 30-day chart:', error);
           this.showChartError('monthChart', 'Error loading monthly data');
         }
+      }
+
+      // Transform uploadData API response to format expected by charts
+      transformUploadData(uploadResponse, chartType) {
+        console.log(`🔄 Transforming uploadData for ${chartType} chart:`, uploadResponse);
+        
+        if (!uploadResponse || uploadResponse.code !== 200 || !uploadResponse.data?.data) {
+          console.error('❌ Invalid uploadData response:', uploadResponse);
+          return { code: 400, msg: 'Invalid data format', data: [] };
+        }
+
+        // Extract the data array from uploadData format
+        const uploadDataPoints = uploadResponse.data.data;
+        
+        // Transform to format expected by existing renderChart function
+        // uploadData gives us: { dataTime: "2025-08-26 00:00:00", pVEnergy: 23.65 }
+        // renderChart expects: { dataTime: "...", totalPVPower: power_value }
+        
+        const transformedData = uploadDataPoints.map(point => ({
+          dataTime: point.dataTime,
+          totalPVPower: (point.pVEnergy || 0) * 1000, // Convert kWh to Wh for power simulation
+          todayPvEnergy: point.pVEnergy || 0, // Keep original energy value
+          // Add any other fields the chart might need
+          deviceSn: this.deviceSn
+        }));
+
+        console.log(`✅ Transformed ${transformedData.length} data points for ${chartType}`);
+        console.log('🔍 Sample transformed point:', transformedData[0]);
+
+        return {
+          code: 200,
+          msg: 'success',
+          data: transformedData
+        };
       }
 
       updateDeviceInfo(device) {
