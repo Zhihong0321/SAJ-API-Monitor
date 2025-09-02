@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug Sync - SAJ Solar Monitor</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 20px; 
+      background: #0f172a; 
+      color: white;
+    }
+    .debug-section { 
+      margin: 20px 0; 
+      padding: 15px; 
+      border: 1px solid #374151; 
+      border-radius: 8px;
+    }
+    button { 
+      background: #f97316; 
+      color: white; 
+      padding: 12px 24px; 
+      border: none; 
+      border-radius: 6px; 
+      cursor: pointer;
+      margin: 5px;
+    }
+    .log { 
+      background: #1e293b; 
+      padding: 10px; 
+      margin: 10px 0; 
+      border-radius: 4px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔧 SAJ API Monitor - Debug Page</h1>
+  
+  <div class="debug-section">
+    <h2>1. Basic API Tests</h2>
+    <button onclick="testApiStatus()">Test API Status</button>
+    <button onclick="testHealthCheck()">Test Health Check</button>
+    <button onclick="testDatabaseConnection()">Test Database</button>
+    <div id="basicTests" class="log"></div>
+  </div>
+
+  <div class="debug-section">
+    <h2>2. SAJ API Integration</h2>
+    <button onclick="testSAJToken()">Test SAJ Token</button>
+    <button onclick="testSAJDevices()">Test SAJ Devices (requires token)</button>
+    <div id="sajTests" class="log"></div>
+  </div>
+
+  <div class="debug-section">
+    <h2>3. Database Operations</h2>
+    <button onclick="testDatabaseTables()">Check Database Tables</button>
+    <button onclick="testDeviceSync()">Test Full Sync</button>
+    <div id="dbTests" class="log"></div>
+  </div>
+
+  <div class="debug-section">
+    <h2>4. Console Logs</h2>
+    <div id="consoleLogs" class="log">
+      Console logs will appear here...
+    </div>
+  </div>
+
+  <script>
+    // Enhanced console logging
+    const originalLog = console.log;
+    const originalError = console.error;
+    const logDiv = document.getElementById('consoleLogs');
+
+    console.log = function(...args) {
+      originalLog.apply(console, args);
+      logDiv.innerHTML += `<div style="color: #22c55e;">[LOG] ${args.join(' ')}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    };
+
+    console.error = function(...args) {
+      originalError.apply(console, args);
+      logDiv.innerHTML += `<div style="color: #ef4444;">[ERROR] ${args.join(' ')}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    };
+
+    function logToDiv(divId, message, type = 'info') {
+      const div = document.getElementById(divId);
+      const color = type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#cbd5e1';
+      div.innerHTML += `<div style="color: ${color};">${new Date().toLocaleTimeString()}: ${message}</div>`;
+      div.scrollTop = div.scrollHeight;
+    }
+
+    // Test functions
+    async function testApiStatus() {
+      logToDiv('basicTests', 'Testing API status...', 'info');
+      try {
+        const response = await fetch('/api/status');
+        const data = await response.json();
+        logToDiv('basicTests', `✅ API Status: ${JSON.stringify(data, null, 2)}`, 'success');
+      } catch (error) {
+        logToDiv('basicTests', `❌ API Status Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function testHealthCheck() {
+      logToDiv('basicTests', 'Testing health endpoint...', 'info');
+      try {
+        const response = await fetch('/health');
+        const data = await response.json();
+        logToDiv('basicTests', `✅ Health: ${JSON.stringify(data, null, 2)}`, 'success');
+      } catch (error) {
+        logToDiv('basicTests', `❌ Health Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function testDatabaseConnection() {
+      logToDiv('basicTests', 'Testing database connection...', 'info');
+      try {
+        const response = await fetch('/api/devices/summary');
+        if (response.ok) {
+          const data = await response.json();
+          logToDiv('basicTests', `✅ Database connected: ${JSON.stringify(data)}`, 'success');
+        } else {
+          logToDiv('basicTests', `⚠️ Database response: ${response.status} ${response.statusText}`, 'error');
+        }
+      } catch (error) {
+        logToDiv('basicTests', `❌ Database Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function testSAJToken() {
+      logToDiv('sajTests', 'Testing SAJ token generation...', 'info');
+      try {
+        const response = await fetch('/api/saj/token', { method: 'POST' });
+        const data = await response.json();
+        
+        if (response.ok) {
+          logToDiv('sajTests', `✅ SAJ Token: ${data.access_token?.substring(0, 50)}...`, 'success');
+          window.testToken = data.access_token; // Store for next test
+        } else {
+          logToDiv('sajTests', `❌ SAJ Token Error: ${JSON.stringify(data)}`, 'error');
+        }
+      } catch (error) {
+        logToDiv('sajTests', `❌ SAJ Token Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function testSAJDevices() {
+      if (!window.testToken) {
+        logToDiv('sajTests', '⚠️ Need to get token first!', 'error');
+        return;
+      }
+      
+      logToDiv('sajTests', 'Testing SAJ device fetch...', 'info');
+      try {
+        const response = await fetch('/api/saj/devices?page=1', {
+          headers: { 'Authorization': `Bearer ${window.testToken}` }
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+          logToDiv('sajTests', `✅ SAJ Devices: Found ${data.total} devices (${data.rows?.length} on page 1)`, 'success');
+        } else {
+          logToDiv('sajTests', `❌ SAJ Devices Error: ${JSON.stringify(data)}`, 'error');
+        }
+      } catch (error) {
+        logToDiv('sajTests', `❌ SAJ Devices Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function testDatabaseTables() {
+      logToDiv('dbTests', 'Checking database tables...', 'info');
+      try {
+        const response = await fetch('/api/devices');
+        if (response.ok) {
+          const data = await response.json();
+          logToDiv('dbTests', `✅ Database tables exist. Found ${data.length} devices`, 'success');
+        } else if (response.status === 500) {
+          logToDiv('dbTests', '❌ Database tables may not exist. Need to run migrations?', 'error');
+        } else {
+          logToDiv('dbTests', `⚠️ Database check: ${response.status} ${response.statusText}`, 'error');
+        }
+      } catch (error) {
+        logToDiv('dbTests', `❌ Database Tables Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function testFullSync() {
+      logToDiv('dbTests', 'Testing full sync process...', 'info');
+      
+      try {
+        // Step 1: Get token
+        logToDiv('dbTests', '🔑 Getting access token...', 'info');
+        const tokenResponse = await fetch('/api/saj/token', { method: 'POST' });
+        const tokenData = await tokenResponse.json();
+        
+        if (!tokenResponse.ok) {
+          throw new Error(`Token error: ${JSON.stringify(tokenData)}`);
+        }
+        
+        // Step 2: Get devices
+        logToDiv('dbTests', '📱 Fetching devices...', 'info');
+        const devicesResponse = await fetch('/api/saj/devices?page=1', {
+          headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+        });
+        const devicesData = await devicesResponse.json();
+        
+        if (!devicesResponse.ok) {
+          throw new Error(`Devices error: ${JSON.stringify(devicesData)}`);
+        }
+        
+        // Step 3: Sync to database
+        logToDiv('dbTests', '💾 Syncing to database...', 'info');
+        const syncResponse = await fetch('/api/devices/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ devices: devicesData.rows })
+        });
+        const syncData = await syncResponse.json();
+        
+        if (syncResponse.ok) {
+          logToDiv('dbTests', `✅ Sync completed! New: ${syncData.newDevices}, Updated: ${syncData.updatedDevices}`, 'success');
+        } else {
+          throw new Error(`Sync error: ${JSON.stringify(syncData)}`);
+        }
+        
+      } catch (error) {
+        logToDiv('dbTests', `❌ Full Sync Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Auto-run basic tests on load
+    window.onload = function() {
+      setTimeout(() => {
+        testApiStatus();
+        setTimeout(() => testDatabaseConnection(), 1000);
+      }, 500);
+    };
+  </script>
+</body>
+</html>

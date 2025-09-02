@@ -58,6 +58,11 @@ app.get('/settings', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html')); // Will create settings.html later
 });
 
+// Debug page for troubleshooting
+app.get('/debug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'debug-sync.html'));
+});
+
 // API Status endpoint for testing
 app.get('/api/status', (req, res) => {
   res.json({
@@ -89,14 +94,22 @@ app.use('*', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🌞 SAJ API Monitor running on port ${PORT}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
   console.log(`📊 Dashboard: http://localhost:${PORT}`);
+  console.log(`🔧 Debug page: http://localhost:${PORT}/debug`);
   
-  // Test database connection on startup
+  // Auto-run database migration on startup
   if (process.env.DATABASE_URL) {
-    require('./railway-db-test.js');
+    console.log('🗄️ Running database migrations...');
+    try {
+      const { runMigrations } = require('./database/migrate.js');
+      await runMigrations();
+      console.log('✅ Database ready!');
+    } catch (error) {
+      console.error('❌ Database migration failed:', error.message);
+    }
   }
 });
 
