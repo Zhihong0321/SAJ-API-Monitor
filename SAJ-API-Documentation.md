@@ -624,6 +624,206 @@ for (const range of dateRanges) {
 
 ---
 
+## 🚨 CRITICAL: SAJ Token Management System 
+
+> **⚠️ MANDATORY READ**: This section is CRITICAL for preventing application-breaking authentication issues. All API development must follow these guidelines.
+
+### Token Collision Problem
+
+**PROBLEM**: The SAJ API has severe limitations on concurrent token usage:
+- ❌ **Multiple simultaneous token requests WILL cause authentication failures**
+- ❌ **Token invalidation cascades**: When one endpoint gets a new token, previous tokens become invalid
+- ❌ **Race conditions**: Concurrent API calls result in 401 "accessToken does not exist" errors
+- ❌ **App-breaking failures**: Can cause complete chart/dashboard failures
+
+### Root Cause Analysis
+In August 2025, we experienced a critical issue where all device page charts failed simultaneously:
+```
+❌ Failed to load resource: 401 (Unauthorized)
+❌ 7-day uploadData API error: 401 {"error":"SAJ API Error","message":"Authentication failed - invalid token or expired session","code":200010,"originalMessage":"accessToken does not exist"}
+❌ Yesterday uploadData API error: 401 (similar error)
+```
+
+**Analysis**: When Yesterday, 7-Day, and 30-Day charts loaded concurrently, each requested separate access tokens:
+1. 30-Day chart got token #1 ✅ (worked)
+2. Yesterday chart got token #2 → token #1 invalidated ❌ 
+3. 7-Day chart got token #3 → tokens #1 & #2 invalidated ❌
+
+### 🛡️ MANDATORY Solution: Token Caching System
+
+**ALL NEW API ENDPOINTS MUST:**
+
+#### 1. Check Database Cache FIRST
+```javascript
+// ✅ CORRECT: Check for cached token before requesting new one
+let accessToken = null;
+
+try {
+  const client = await getDBClient();
+  await client.connect();
+  
+  const tokenResult = await client.query(
+    'SELECT access_token, expires_at FROM saj_tokens WHERE is_active = TRUE AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1'
+  );
+  
+  if (tokenResult.rows.length > 0) {
+    accessToken = tokenResult.rows[0].access_token;
+    console.log(`✅ Using cached token: ${accessToken.substring(0, 20)}...`);
+  }
+  
+  await client.end();
+} catch (dbError) {
+  console.log(`⚠️ Database token check failed: ${dbError.message}`);
+}
+```
+
+#### 2. Request New Token ONLY If Cache Empty/Expired
+```javascript
+// ✅ CORRECT: Only request new token when absolutely necessary
+if (!accessToken) {
+  console.log(`🔑 Requesting new access token (cache empty/expired)`);
+  
+  const tokenResponse = await axios.get(`${SAJ_CONFIG.baseUrl}/access_token`, {
+    params: { appId: SAJ_CONFIG.appId, appSecret: SAJ_CONFIG.appSecret },
+    headers: SAJ_CONFIG.headers,
+    timeout: 10000
+  });
+  
+  const tokenData = tokenResponse.data.data;
+  accessToken = tokenData?.access_token;
+  
+  // CRITICAL: Store new token in database for sharing
+  try {
+    const client = await getDBClient();
+    await client.connect();
+    
+    // Deactivate old tokens
+    await client.query('UPDATE saj_tokens SET is_active = FALSE WHERE is_active = TRUE');
+    
+    // Insert new token with expiration
+    const expiresAt = new Date(Date.now() + (tokenData.expires * 1000));
+    await client.query(
+      'INSERT INTO saj_tokens (access_token, expires_at) VALUES ($1, $2)',
+      [accessToken, expiresAt]
+    );
+    
+    await client.end();
+    console.log(`✅ New token cached for sharing`);
+  } catch (dbError) {
+    console.log(`⚠️ Failed to cache token: ${dbError.message}`);
+  }
+}
+```
+
+#### 3. Database Schema Requirements
+```sql
+-- Required table structure
+CREATE TABLE saj_tokens (
+  id SERIAL PRIMARY KEY,
+  access_token TEXT NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Required index for performance
+CREATE INDEX idx_saj_tokens_active_expires ON saj_tokens (is_active, expires_at);
+```
+
+### ❌ ANTI-PATTERNS - NEVER DO THIS
+
+```javascript
+// ❌ WRONG: Direct token request without cache check
+const tokenResponse = await axios.get(`${SAJ_CONFIG.baseUrl}/access_token`, {
+  params: { appId: SAJ_CONFIG.appId, appSecret: SAJ_CONFIG.appSecret }
+});
+const accessToken = tokenResponse.data.data.access_token;
+
+// ❌ WRONG: Not storing token for sharing
+// This causes other concurrent requests to fail
+
+// ❌ WRONG: Multiple endpoints requesting tokens simultaneously  
+Promise.all([
+  callEndpoint1(), // Each gets separate token
+  callEndpoint2(), // Causes authentication cascade failure
+  callEndpoint3()
+]);
+```
+
+### ✅ CORRECT Implementation Pattern
+
+```javascript
+// ✅ CORRECT: Shared token utility function
+async function getSharedAccessToken() {
+  let accessToken = await getCachedToken();
+  
+  if (!accessToken) {
+    accessToken = await requestAndCacheNewToken();
+  }
+  
+  return accessToken;
+}
+
+// ✅ CORRECT: All endpoints use shared token
+router.get('/devices/:deviceSn/realtime', async (req, res) => {
+  const accessToken = await getSharedAccessToken(); // Shared
+  // ... rest of endpoint logic
+});
+
+router.get('/devices/:deviceSn/uploadData', async (req, res) => {
+  const accessToken = await getSharedAccessToken(); // Shared  
+  // ... rest of endpoint logic
+});
+```
+
+### 🔧 Implementation Checklist
+
+Before deploying ANY new SAJ API endpoint:
+
+- [ ] **Cache Check**: Does it check database for existing valid token?
+- [ ] **Conditional Request**: Does it only request new token if cache empty/expired?
+- [ ] **Token Storage**: Does it store new tokens in database with expiration?
+- [ ] **Error Handling**: Does it handle database connection failures gracefully?
+- [ ] **Logging**: Does it log token usage (cached vs new) for debugging?
+- [ ] **Concurrent Safety**: Can multiple instances call this endpoint simultaneously?
+
+### 🧪 Testing Requirements
+
+**MANDATORY**: Test concurrent API calls before deployment:
+
+```javascript
+// Test script - all three should succeed
+Promise.all([
+  fetch('/api/devices/DEVICE123/uploadData?timeUnit=1&...'),
+  fetch('/api/devices/DEVICE123/realtime'),
+  fetch('/api/devices/DEVICE123/uploadData?timeUnit=0&...')
+]).then(responses => {
+  // All should return 200, not 401
+  console.log('Concurrent test results:', responses.map(r => r.status));
+});
+```
+
+### 📋 Existing Endpoints Status
+
+| Endpoint | Token Caching | Status | Action Required |
+|----------|---------------|---------|-----------------|
+| `/devices/:deviceSn/uploadData` | ✅ Implemented | Fixed | None |
+| `/devices/:deviceSn/realtime` | ❌ Direct Request | At Risk | **NEEDS UPDATE** |  
+| `/devices/:deviceSn/historyDataCommon` | ❌ Direct Request | At Risk | **NEEDS UPDATE** |
+| `/token/refresh` | ✅ Caches Tokens | Working | None |
+
+### 🚨 Emergency Recovery
+
+If authentication cascade failure occurs:
+
+1. **Clear Token Cache**: `UPDATE saj_tokens SET is_active = FALSE`
+2. **Wait 30 seconds**: Allow SAJ API to reset
+3. **Single Token Request**: Make ONE manual token request
+4. **Verify Charts**: Check all charts load successfully
+5. **Deploy Fix**: Update affected endpoints with token caching
+
+---
+
 ## Implementation Notes
 
 1. **Access Token Management**: 
