@@ -41,34 +41,34 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Welcome dashboard
+// HTML Page Routes
 app.get('/', (req, res) => {
-  res.json({
-    message: '🌞 Welcome to SAJ Solar API Monitor',
-    description: 'Monitor your SAJ solar inverter devices in real-time',
-    features: [
-      '📊 Device monitoring dashboard',
-      '⚡ Real-time energy data',
-      '📱 Mobile-responsive interface',
-      '🔄 Automatic device synchronization',
-      '⚠️ Alarm and status monitoring'
-    ],
-    endpoints: {
-      health: '/health',
-      devices: '/api/devices',
-      realtime: '/api/devices/:deviceSn/realtime',
-      sync: '/api/sync'
-    },
-    status: 'ready'
-  });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// API Routes placeholder
-app.use('/api', (req, res, next) => {
-  // API routes will be implemented here
-  res.status(200).json({
-    message: 'SAJ API endpoints coming soon',
-    timestamp: new Date().toISOString()
+app.get('/sync', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sync.html'));
+});
+
+app.get('/devices', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html')); // Will create devices.html later
+});
+
+app.get('/settings', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html')); // Will create settings.html later
+});
+
+// API Status endpoint for testing
+app.get('/api/status', (req, res) => {
+  res.json({
+    message: '🌞 SAJ API Monitor - API Status',
+    status: 'operational',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      devices: '/api/devices',
+      sync: '/api/devices/sync',
+      token: '/api/saj/token'
+    }
   });
 });
 
