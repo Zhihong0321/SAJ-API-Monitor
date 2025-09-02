@@ -333,10 +333,13 @@
 
           if (response.ok) {
             const data = await response.json();
+            console.log('Yesterday data loaded:', data); // Debug log
             this.renderChart('yesterdayChart', data, 'Yesterday\'s Generation');
             document.getElementById('yesterdayPeriod').textContent = yesterday.toLocaleDateString();
           } else {
-            this.showChartError('yesterdayChart', 'Failed to load yesterday\'s data');
+            const errorText = await response.text();
+            console.error('Yesterday API error:', response.status, errorText);
+            this.showChartError('yesterdayChart', `Failed to load yesterday's data (${response.status})`);
           }
         } catch (error) {
           console.error('Failed to load yesterday chart:', error);
@@ -417,24 +420,54 @@
 
       renderChart(chartId, data, title) {
         const chartElement = document.getElementById(chartId);
+        console.log(`Rendering chart ${chartId} with title: ${title}`);
+        console.log('Data received:', data);
 
-        if (!data || !data.data || data.data.length === 0) {
+        // Check if data exists and has the correct structure
+        if (!data || data.code !== 200) {
+          console.error(`Invalid data format for ${chartId}:`, data);
+          chartElement.innerHTML = '<div>❌ Invalid data format</div>';
+          return;
+        }
+
+        // For historical data, the data array is directly in response.data
+        // For real-time data, response.data is a single object
+        let dataPoints = [];
+        if (Array.isArray(data.data)) {
+          // Historical data - array of data points
+          dataPoints = data.data;
+        } else if (data.data && typeof data.data === 'object') {
+          // Real-time data - single object, convert to array for consistency
+          dataPoints = [data.data];
+        }
+
+        if (dataPoints.length === 0) {
           chartElement.innerHTML = '<div>📊 No data available for this period</div>';
           return;
         }
 
         // Simple bar chart visualization
-        const maxPower = Math.max(...data.data.map(d => parseFloat(d.totalPVPower) || 0));
+        const maxPower = Math.max(...dataPoints.map(d => parseFloat(d.totalPVPower) || 0));
+
+        if (maxPower === 0) {
+          chartElement.innerHTML = '<div>📊 No power generation data available</div>';
+          return;
+        }
+
         const chartHeight = 150;
+        let chartHTML = `<div style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 8px;">${title} (${dataPoints.length} data points)</div>`;
 
-        let chartHTML = `<div style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 8px;">${title} (${data.data.length} data points)</div>`;
-
-        // Create a simple ASCII-style chart
-        data.data.forEach((point, index) => {
-          if (index % Math.ceil(data.data.length / 20) === 0) { // Show every nth point to avoid overcrowding
+        // Create a simple bar chart
+        dataPoints.forEach((point, index) => {
+          // For large datasets, sample every nth point to avoid overcrowding
+          const sampleRate = Math.ceil(dataPoints.length / 20);
+          if (index % sampleRate === 0) {
             const power = parseFloat(point.totalPVPower) || 0;
-            const barHeight = Math.round((power / maxPower) * chartHeight);
-            const time = new Date(point.dataTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const time = new Date(point.dataTime).toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false
+            });
 
             chartHTML += `
               <div style="display: flex; align-items: end; margin-bottom: 2px; height: 20px;">
@@ -447,6 +480,16 @@
             `;
           }
         });
+
+        // Add summary statistics
+        const avgPower = dataPoints.reduce((sum, d) => sum + (parseFloat(d.totalPVPower) || 0), 0) / dataPoints.length;
+        const totalEnergy = dataPoints.reduce((sum, d) => sum + (parseFloat(d.todayPvEnergy) || 0), 0);
+
+        chartHTML += `
+          <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--color-bg-tertiary); font-size: 11px; color: var(--color-text-secondary);">
+            <div>Avg Power: ${avgPower.toFixed(0)}W | Peak: ${maxPower.toFixed(0)}W | Total Energy: ${totalEnergy.toFixed(2)}kWh</div>
+          </div>
+        `;
 
         chartElement.innerHTML = chartHTML;
       }
