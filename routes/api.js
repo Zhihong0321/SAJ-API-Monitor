@@ -349,29 +349,50 @@ router.get('/sync/history', async (req, res) => {
 
 // Get specific device by SN
 router.get('/devices/:deviceSn', async (req, res) => {
-  const client = await getDBClient();
   const { deviceSn } = req.params;
-
+  
   try {
-    await client.connect();
+    console.log(`📱 Getting device info for: ${deviceSn}`);
+    
+    // Try database first, but don't fail if database is unavailable
+    let deviceFromDB = null;
+    try {
+      const client = await getDBClient();
+      await client.connect();
 
-    const result = await client.query(
-      'SELECT * FROM saj_devices WHERE device_sn = $1',
-      [deviceSn]
-    );
+      const result = await client.query(
+        'SELECT * FROM saj_devices WHERE device_sn = $1',
+        [deviceSn]
+      );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Device not found' });
+      await client.end();
+      
+      if (result.rows.length > 0) {
+        deviceFromDB = result.rows[0];
+        console.log(`✅ Found device in database: ${deviceSn}`);
+      }
+    } catch (dbError) {
+      console.log(`⚠️ Database unavailable, continuing with API only: ${dbError.message}`);
     }
 
-    res.json(result.rows[0]);
+    // If device found in DB, return it
+    if (deviceFromDB) {
+      return res.json(deviceFromDB);
+    }
+
+    // Otherwise, return basic device info based on deviceSn
+    console.log(`📝 Returning basic device info for: ${deviceSn}`);
+    res.json({
+      device_sn: deviceSn,
+      device_name: `Device ${deviceSn.slice(-8)}`, // Last 8 chars as name
+      status: 'unknown',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    });
 
   } catch (error) {
     console.error('❌ Failed to fetch device:', error.message);
     res.status(500).json({ error: 'Failed to fetch device', message: error.message });
-
-  } finally {
-    await client.end();
   }
 });
 
@@ -413,8 +434,30 @@ router.get('/devices/:deviceSn/realtime', async (req, res) => {
       console.log('✅ Real-time data retrieved');
       res.json(response.data.data);
     } else {
-      console.log(`❌ API returned error: ${response.data.msg}`);
-      res.status(500).json({ error: 'Failed to get real-time data', message: response.data.msg });
+      // Handle specific SAJ API error codes  
+      console.log(`❌ SAJ API returned error code: ${response.data.code}, message: ${response.data.msg}`);
+      
+      let httpStatus = 500;
+      let userMessage = response.data.msg || 'Unknown API error';
+      
+      // Handle specific SAJ API error codes
+      if (response.data.code === 200010) {
+        httpStatus = 401;
+        userMessage = 'Authentication failed - invalid token or expired session';
+      } else if (response.data.code === 200011) {
+        httpStatus = 403;
+        userMessage = 'Access forbidden - invalid device or insufficient permissions';
+      } else if (response.data.code === 200001) {
+        httpStatus = 400;
+        userMessage = 'Invalid request parameters';
+      }
+      
+      res.status(httpStatus).json({
+        error: 'SAJ API Error',
+        message: userMessage,
+        code: response.data.code,
+        originalMessage: response.data.msg
+      });
     }
 
   } catch (error) {
@@ -474,11 +517,29 @@ router.get('/devices/:deviceSn/historical', async (req, res) => {
       console.log(`✅ Historical data retrieved: ${response.data.data ? response.data.data.length : 0} data points`);
       res.json(response.data);
     } else {
-      console.log(`❌ API returned error: ${response.data.msg}`);
-      res.status(response.data.code || 500).json({
-        error: 'Failed to get historical data',
-        message: response.data.msg,
-        code: response.data.code
+      // Handle specific SAJ API error codes
+      console.log(`❌ SAJ API returned error code: ${response.data.code}, message: ${response.data.msg}`);
+      
+      let httpStatus = 500;
+      let userMessage = response.data.msg || 'Unknown API error';
+      
+      // Handle specific SAJ API error codes
+      if (response.data.code === 200010) {
+        httpStatus = 401;
+        userMessage = 'Authentication failed - invalid token or expired session';
+      } else if (response.data.code === 200011) {
+        httpStatus = 403;
+        userMessage = 'Access forbidden - invalid device or insufficient permissions';
+      } else if (response.data.code === 200001) {
+        httpStatus = 400;
+        userMessage = 'Invalid request parameters';
+      }
+      
+      res.status(httpStatus).json({
+        error: 'SAJ API Error',
+        message: userMessage,
+        code: response.data.code,
+        originalMessage: response.data.msg
       });
     }
 
