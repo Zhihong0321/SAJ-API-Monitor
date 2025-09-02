@@ -503,9 +503,10 @@
                 <!-- Grid lines (optional) -->
                 <defs>
                   <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.8" />
-                    <stop offset="50%" style="stop-color:#1d4ed8;stop-opacity:0.4" />
-                    <stop offset="100%" style="stop-color:#1e40af;stop-opacity:0.1" />
+                    <stop offset="0%" style="stop-color:#2563eb;stop-opacity:0.9" />
+                    <stop offset="25%" style="stop-color:#3b82f6;stop-opacity:0.6" />
+                    <stop offset="75%" style="stop-color:#1e40af;stop-opacity:0.3" />
+                    <stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:0.1" />
                   </linearGradient>
                 </defs>
                 
@@ -513,11 +514,11 @@
                 ${areaPath ? `<path d="${areaPath}" fill="url(#areaGradient)" />` : ''}
                 
                 <!-- Line stroke -->
-                ${pathData ? `<path d="${pathData}" fill="none" stroke="#3b82f6" stroke-width="0.5" />` : ''}
+                ${pathData ? `<path d="${pathData}" fill="none" stroke="#2563eb" stroke-width="1" />` : ''}
                 
                 <!-- Data points (dots) -->
                 ${points.map(point => `
-                  <circle cx="${point.x}" cy="${point.y}" r="0.3" fill="#60a5fa" opacity="0.8">
+                  <circle cx="${point.x}" cy="${point.y}" r="0.4" fill="#2563eb" opacity="0.9">
                     <title>${new Date(point.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}: ${point.power.toFixed(0)}W</title>
                   </circle>
                 `).join('')}
@@ -545,15 +546,15 @@
               gap: 12px;
             ">
               <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%;"></div>
+                <div style="width: 8px; height: 8px; background: #2563eb; border-radius: 50%;"></div>
                 <span><strong>Peak:</strong> ${maxPower.toFixed(0)}W</span>
               </div>
               <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 8px; height: 8px; background: #1d4ed8; border-radius: 50%;"></div>
+                <div style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%;"></div>
                 <span><strong>Avg:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.totalPVPower) || 0), 0) / dataPoints.length).toFixed(0)}W</span>
               </div>
               <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 8px; height: 8px; background: #60a5fa; border-radius: 50%;"></div>
+                <div style="width: 8px; height: 8px; background: #1e40af; border-radius: 50%;"></div>
                 <span><strong>Energy:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.todayPvEnergy) || 0), 0)).toFixed(2)}kWh</span>
               </div>
             </div>
