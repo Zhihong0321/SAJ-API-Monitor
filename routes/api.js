@@ -403,23 +403,39 @@ router.get('/devices/:deviceSn/realtime', async (req, res) => {
   try {
     console.log(`📊 Getting real-time data for device: ${deviceSn}`);
 
-    // Get access token first
+    // Get access token first with detailed logging
+    console.log(`🔑 Requesting access token for realtime data`);
+    console.log(`🔧 Using appId: ${SAJ_CONFIG.appId}`);
+    
     const tokenResponse = await axios.get(`${SAJ_CONFIG.baseUrl}/access_token`, {
       params: {
         appId: SAJ_CONFIG.appId,
         appSecret: SAJ_CONFIG.appSecret
       },
-      headers: SAJ_CONFIG.headers
+      headers: SAJ_CONFIG.headers,
+      timeout: 10000
     });
 
+    console.log(`🔑 Token response code: ${tokenResponse.data.code}`);
+    console.log(`🔑 Token response message: ${tokenResponse.data.msg || 'No message'}`);
+
     if (tokenResponse.data.code !== 200) {
-      throw new Error('Failed to get access token');
+      console.error(`❌ Token request failed:`, tokenResponse.data);
+      throw new Error(`Failed to get access token: ${tokenResponse.data.msg || tokenResponse.data.code}`);
     }
 
-    const accessToken = tokenResponse.data.data.access_token;
+    const accessToken = tokenResponse.data.data?.access_token;
+    if (!accessToken) {
+      console.error(`❌ No access token in response:`, tokenResponse.data);
+      throw new Error('Access token not found in response');
+    }
+    
+    console.log(`✅ Access token obtained: ${accessToken.substring(0, 20)}...`);
     const clientSign = generateClientSign(deviceSn);
+    console.log(`🔐 Generated client signature: ${clientSign.substring(0, 20)}...`);
 
     // Get real-time data
+    console.log(`📡 Making realtime API call...`);
     const response = await axios.get(`${SAJ_CONFIG.baseUrl}/device/realtimeDataCommon`, {
       params: { deviceSn },
       headers: {
@@ -429,6 +445,8 @@ router.get('/devices/:deviceSn/realtime', async (req, res) => {
       },
       timeout: 15000
     });
+
+    console.log(`📡 Realtime API response code: ${response.data.code}`);
 
     if (response.data.code === 200) {
       console.log('✅ Real-time data retrieved');
@@ -482,23 +500,39 @@ router.get('/devices/:deviceSn/historical', async (req, res) => {
     console.log(`📊 Getting historical data for device: ${deviceSn}`);
     console.log(`📅 Date range: ${startTime} to ${endTime}`);
 
-    // Get access token first
+    // Get access token first with detailed logging
+    console.log(`🔑 Requesting access token for historical data`);
+    console.log(`🔧 Using appId: ${SAJ_CONFIG.appId}`);
+    
     const tokenResponse = await axios.get(`${SAJ_CONFIG.baseUrl}/access_token`, {
       params: {
         appId: SAJ_CONFIG.appId,
         appSecret: SAJ_CONFIG.appSecret
       },
-      headers: SAJ_CONFIG.headers
+      headers: SAJ_CONFIG.headers,
+      timeout: 10000
     });
 
+    console.log(`🔑 Token response code: ${tokenResponse.data.code}`);
+    console.log(`🔑 Token response message: ${tokenResponse.data.msg || 'No message'}`);
+
     if (tokenResponse.data.code !== 200) {
-      throw new Error('Failed to get access token');
+      console.error(`❌ Token request failed:`, tokenResponse.data);
+      throw new Error(`Failed to get access token: ${tokenResponse.data.msg || tokenResponse.data.code}`);
     }
 
-    const accessToken = tokenResponse.data.data.access_token;
+    const accessToken = tokenResponse.data.data?.access_token;
+    if (!accessToken) {
+      console.error(`❌ No access token in response:`, tokenResponse.data);
+      throw new Error('Access token not found in response');
+    }
+    
+    console.log(`✅ Access token obtained: ${accessToken.substring(0, 20)}...`);
     const clientSign = generateClientSign(deviceSn);
+    console.log(`🔐 Generated client signature: ${clientSign.substring(0, 20)}...`);
 
     // Get historical data
+    console.log(`📡 Making historical API call...`);
     const response = await axios.get(`${SAJ_CONFIG.baseUrl}/device/historyDataCommon`, {
       params: {
         deviceSn,
@@ -512,6 +546,8 @@ router.get('/devices/:deviceSn/historical', async (req, res) => {
       },
       timeout: 30000 // Longer timeout for historical data
     });
+
+    console.log(`📡 Historical API response code: ${response.data.code}`);
 
     if (response.data.code === 200) {
       console.log(`✅ Historical data retrieved: ${response.data.data ? response.data.data.length : 0} data points`);
