@@ -69,6 +69,14 @@ app.get('/devices', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'devices.html'));
 });
 
+app.get('/plants', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'plants.html'));
+});
+
+app.get('/plant-sync', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'plant-sync.html'));
+});
+
 app.get('/offline-devices', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'offline-devices.html'));
 });
