@@ -233,8 +233,8 @@
             <div class="plant-details">
               <div><strong>Plant ID:</strong> ${plant.plant_id}</div>
               ${plant.plant_no ? `<div><strong>Plant No:</strong> ${plant.plant_no}</div>` : ''}
-              ${plant.remark ? `<div><strong>Remark:</strong> ${plant.remark}</div>` : ''}
               <div><strong>Last Updated:</strong> ${new Date(plant.updated_at).toLocaleDateString()}</div>
+              ${plant.remark && plant.remark.trim() !== '' ? `<div style="margin-top: 8px; padding: 6px 8px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; color: #856404;"><strong>⚠️ Remark:</strong> ${plant.remark}</div>` : ''}
             </div>
             <div class="plant-actions">
               <a href="/plant-generation?plantId=${plant.plant_id}" class="btn btn-primary btn-sm">
