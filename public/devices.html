@@ -75,6 +75,138 @@
       padding: var(--space-8) var(--space-4);
       color: var(--color-text-secondary);
     }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: var(--color-bg-primary);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      max-width: 400px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-4);
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--color-text-secondary);
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      color: var(--color-text-primary);
+    }
+
+    .form-group {
+      margin-bottom: var(--space-4);
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: var(--space-2);
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: var(--space-3);
+      border: 1px solid var(--color-bg-tertiary);
+      border-radius: var(--radius-sm);
+      background: var(--color-bg-secondary);
+      color: var(--color-text-primary);
+      font-size: 14px;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--color-solar-online);
+    }
+
+    .input-with-button {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    .input-with-button .form-input {
+      flex: 1;
+    }
+
+    .test-result {
+      margin-top: var(--space-3);
+      padding: var(--space-3);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+    }
+
+    .test-result.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .test-result.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .test-result.loading {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeaa7;
+    }
+
+    .device-preview {
+      background: var(--color-bg-secondary);
+      border-radius: var(--radius-sm);
+      padding: var(--space-3);
+      margin-top: var(--space-2);
+    }
+
+    .device-preview-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: var(--space-1);
+      font-size: 14px;
+    }
+
+    .device-preview-item:last-child {
+      margin-bottom: 0;
+    }
   </style>
 </head>
 <body>
@@ -110,7 +242,10 @@
     <section class="mb-6">
       <div class="card-header">
         <h3 class="text-h3">Device List</h3>
-        <a href="/sync" class="btn btn-primary btn-sm">Sync Devices</a>
+        <div style="display: flex; gap: var(--space-2);">
+          <button id="manualAddBtn" class="btn btn-secondary btn-sm">➕ Manual Add Device</button>
+          <a href="/sync" class="btn btn-primary btn-sm">Sync Devices</a>
+        </div>
       </div>
 
       <div id="deviceList" class="space-y-3">
@@ -131,6 +266,35 @@
       </div>
     </section>
   </main>
+
+  <!-- Manual Add Device Modal -->
+  <div id="manualAddModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Manual Add Device</h3>
+        <button id="closeModal" class="modal-close">×</button>
+      </div>
+      
+      <form id="addDeviceForm">
+        <div class="form-group">
+          <label class="form-label" for="deviceSn">Device Serial Number</label>
+          <div class="input-with-button">
+            <input type="text" id="deviceSn" class="form-input" placeholder="Enter device SN (e.g., XXXXXXXX)" required>
+            <button type="button" id="testDeviceBtn" class="btn btn-secondary btn-sm">Test</button>
+          </div>
+          <div id="testResult" class="test-result" style="display: none;"></div>
+          <div id="devicePreview" class="device-preview" style="display: none;"></div>
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; gap: var(--space-2); justify-content: flex-end;">
+            <button type="button" id="cancelBtn" class="btn btn-ghost">Cancel</button>
+            <button type="submit" id="addDeviceSubmitBtn" class="btn btn-primary" disabled>Add Device</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Bottom Navigation -->
   <nav class="bottom-nav">
@@ -171,6 +335,31 @@
       setupEventListeners() {
         const refreshBtn = document.getElementById('refreshBtn');
         refreshBtn.addEventListener('click', () => this.refreshData());
+
+        // Manual add device modal
+        const manualAddBtn = document.getElementById('manualAddBtn');
+        const modal = document.getElementById('manualAddModal');
+        const closeModal = document.getElementById('closeModal');
+        const cancelBtn = document.getElementById('cancelBtn');
+
+        manualAddBtn.addEventListener('click', () => this.openManualAddModal());
+        closeModal.addEventListener('click', () => this.closeManualAddModal());
+        cancelBtn.addEventListener('click', () => this.closeManualAddModal());
+        
+        // Close modal when clicking overlay
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            this.closeManualAddModal();
+          }
+        });
+
+        // Device testing
+        const testDeviceBtn = document.getElementById('testDeviceBtn');
+        testDeviceBtn.addEventListener('click', () => this.testDevice());
+
+        // Form submission
+        const addDeviceForm = document.getElementById('addDeviceForm');
+        addDeviceForm.addEventListener('submit', (e) => this.addDevice(e));
       }
 
       async loadDeviceData() {
@@ -273,6 +462,169 @@
 
       showError(message) {
         alert(message);
+      }
+
+      // Manual Add Device Modal Methods
+      openManualAddModal() {
+        const modal = document.getElementById('manualAddModal');
+        modal.style.display = 'flex';
+        document.getElementById('deviceSn').focus();
+        this.resetModal();
+      }
+
+      closeManualAddModal() {
+        const modal = document.getElementById('manualAddModal');
+        modal.style.display = 'none';
+        this.resetModal();
+      }
+
+      resetModal() {
+        document.getElementById('deviceSn').value = '';
+        document.getElementById('testResult').style.display = 'none';
+        document.getElementById('devicePreview').style.display = 'none';
+        document.getElementById('addDeviceSubmitBtn').disabled = true;
+        this.testedDevice = null;
+      }
+
+      async testDevice() {
+        const deviceSn = document.getElementById('deviceSn').value.trim();
+        const testResult = document.getElementById('testResult');
+        const devicePreview = document.getElementById('devicePreview');
+        const testBtn = document.getElementById('testDeviceBtn');
+        const submitBtn = document.getElementById('addDeviceSubmitBtn');
+
+        if (!deviceSn) {
+          this.showTestResult('error', 'Please enter a device serial number');
+          return;
+        }
+
+        try {
+          testBtn.disabled = true;
+          testBtn.textContent = 'Testing...';
+          this.showTestResult('loading', 'Testing device connection...');
+          devicePreview.style.display = 'none';
+          submitBtn.disabled = true;
+
+          const response = await fetch('/api/devices/test', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ deviceSn })
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            this.showTestResult('success', `✅ ${result.message}`);
+            this.showDevicePreview(result.device);
+            submitBtn.disabled = false;
+            this.testedDevice = result.device;
+          } else {
+            this.showTestResult('error', `❌ ${result.error}: ${result.message}`);
+            devicePreview.style.display = 'none';
+            submitBtn.disabled = true;
+            this.testedDevice = null;
+          }
+
+        } catch (error) {
+          console.error('Failed to test device:', error);
+          this.showTestResult('error', `❌ Failed to test device: ${error.message}`);
+          devicePreview.style.display = 'none';
+          submitBtn.disabled = true;
+          this.testedDevice = null;
+        } finally {
+          testBtn.disabled = false;
+          testBtn.textContent = 'Test';
+        }
+      }
+
+      showTestResult(type, message) {
+        const testResult = document.getElementById('testResult');
+        testResult.className = `test-result ${type}`;
+        testResult.textContent = message;
+        testResult.style.display = 'block';
+      }
+
+      showDevicePreview(device) {
+        const devicePreview = document.getElementById('devicePreview');
+        devicePreview.innerHTML = `
+          <div class="device-preview-item">
+            <span><strong>Device SN:</strong></span>
+            <span>${device.deviceSn}</span>
+          </div>
+          <div class="device-preview-item">
+            <span><strong>Plant Name:</strong></span>
+            <span>${device.plantName}</span>
+          </div>
+          <div class="device-preview-item">
+            <span><strong>Device Type:</strong></span>
+            <span>${device.deviceType}</span>
+          </div>
+          <div class="device-preview-item">
+            <span><strong>Country:</strong></span>
+            <span>${device.country}</span>
+          </div>
+          <div class="device-preview-item">
+            <span><strong>Status:</strong></span>
+            <span>${device.isOnline ? 'Online' : 'Offline'} ${device.isAlarm ? '(Alarm)' : ''}</span>
+          </div>
+          <div class="device-preview-item">
+            <span><strong>Power Now:</strong></span>
+            <span>${device.powerNow} W</span>
+          </div>
+        `;
+        devicePreview.style.display = 'block';
+      }
+
+      async addDevice(e) {
+        e.preventDefault();
+        
+        if (!this.testedDevice) {
+          this.showTestResult('error', 'Please test the device first');
+          return;
+        }
+
+        const submitBtn = document.getElementById('addDeviceSubmitBtn');
+        
+        try {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Adding...';
+
+          const response = await fetch('/api/devices/add', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              deviceSn: this.testedDevice.deviceSn,
+              plantName: this.testedDevice.plantName,
+              deviceType: this.testedDevice.deviceType,
+              country: this.testedDevice.country
+            })
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            this.showTestResult('success', `✅ ${result.message}`);
+            
+            // Close modal and refresh device list after a short delay
+            setTimeout(() => {
+              this.closeManualAddModal();
+              this.refreshData();
+            }, 1500);
+          } else {
+            this.showTestResult('error', `❌ ${result.error}: ${result.message}`);
+          }
+
+        } catch (error) {
+          console.error('Failed to add device:', error);
+          this.showTestResult('error', `❌ Failed to add device: ${error.message}`);
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Add Device';
+        }
       }
     }
 

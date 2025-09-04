@@ -1460,4 +1460,183 @@ router.get('/plants/:plantId/generation', async (req, res) => {
   }
 });
 
+// Test device SN for manual addition
+router.post('/devices/test', async (req, res) => {
+  const { deviceSn } = req.body;
+
+  if (!deviceSn || !deviceSn.trim()) {
+    return res.status(400).json({ error: 'Device SN is required' });
+  }
+
+  try {
+    console.log(`🧪 Testing device SN for manual addition: ${deviceSn}`);
+
+    // Get access token
+    let accessToken = null;
+    try {
+      const client = await getDBClient();
+      await client.connect();
+
+      const tokenResult = await client.query(
+        'SELECT access_token, expires_at FROM saj_tokens WHERE is_active = TRUE AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1'
+      );
+
+      if (tokenResult.rows.length > 0) {
+        accessToken = tokenResult.rows[0].access_token;
+        console.log(`🔑 Using cached token: ${accessToken.substring(0, 20)}...`);
+      }
+
+      await client.end();
+    } catch (tokenError) {
+      console.error('⚠️  Failed to get cached token, will request new one:', tokenError.message);
+    }
+
+    // If no cached token, get a new one
+    if (!accessToken) {
+      console.log(`🔑 Requesting fresh access token for device test`);
+      const tokenResponse = await axios.get(`${SAJ_CONFIG.baseUrl}/access_token`, {
+        params: {
+          appId: SAJ_CONFIG.appId,
+          appSecret: SAJ_CONFIG.appSecret
+        },
+        headers: SAJ_CONFIG.headers,
+        timeout: 15000
+      });
+
+      if (tokenResponse.data.code !== 200) {
+        throw new Error(`Failed to get access token: ${tokenResponse.data.msg}`);
+      }
+
+      accessToken = tokenResponse.data.data.access_token;
+      console.log(`✅ Fresh token obtained: ${accessToken.substring(0, 20)}...`);
+    }
+
+    // Test device by getting its realtime data
+    console.log(`📡 Testing device with realtime data API call...`);
+    const clientSign = generateClientSign(deviceSn);
+    const response = await axios.get(`${SAJ_CONFIG.baseUrl}/device/realtime`, {
+      params: {
+        deviceSN: deviceSn,
+        clientSign: clientSign
+      },
+      headers: {
+        ...SAJ_CONFIG.headers,
+        'accessToken': accessToken
+      },
+      timeout: 15000
+    });
+
+    console.log(`📡 Device test API response code: ${response.data.code}`);
+
+    if (response.data.code === 200) {
+      console.log('✅ Device test successful - device exists and is accessible');
+      
+      // Extract basic device info from the response
+      const deviceData = response.data.data;
+      
+      res.json({
+        success: true,
+        message: 'Device found and accessible',
+        device: {
+          deviceSn: deviceSn,
+          plantName: deviceData.plantName || 'Unknown Plant',
+          deviceType: deviceData.deviceType || 'Unknown Type',
+          country: deviceData.country || 'Unknown',
+          isOnline: deviceData.isOnline || false,
+          isAlarm: deviceData.isAlarm || false,
+          powerNow: deviceData.powerNow || 0
+        }
+      });
+    } else {
+      console.log(`❌ Device test failed: ${response.data.msg}`);
+      res.status(400).json({
+        success: false,
+        error: 'Device not found or inaccessible',
+        message: response.data.msg || 'Unknown error from SAJ API'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Failed to test device:', error.message);
+    
+    if (error.response) {
+      res.status(error.response.status || 500).json({
+        success: false,
+        error: 'SAJ API Error',
+        message: error.response.data?.msg || error.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to test device',
+        message: error.message
+      });
+    }
+  }
+});
+
+// Manually add device to database
+router.post('/devices/add', async (req, res) => {
+  const { deviceSn, plantName, deviceType, country } = req.body;
+
+  if (!deviceSn || !deviceSn.trim()) {
+    return res.status(400).json({ error: 'Device SN is required' });
+  }
+
+  try {
+    console.log(`➕ Manually adding device to database: ${deviceSn}`);
+
+    const client = await getDBClient();
+    await client.connect();
+
+    // Check if device already exists
+    const existingDevice = await client.query(
+      'SELECT device_sn FROM devices WHERE device_sn = $1',
+      [deviceSn]
+    );
+
+    if (existingDevice.rows.length > 0) {
+      await client.end();
+      return res.status(400).json({
+        success: false,
+        error: 'Device already exists',
+        message: `Device ${deviceSn} is already in the database`
+      });
+    }
+
+    // Insert the device
+    const result = await client.query(
+      `INSERT INTO devices (device_sn, plant_name, device_type, country, is_online, is_alarm, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+       RETURNING *`,
+      [
+        deviceSn,
+        plantName || 'Manually Added Plant',
+        deviceType || 'Unknown Type',
+        country || 'Unknown',
+        false, // Default to offline
+        false  // Default to no alarm
+      ]
+    );
+
+    await client.end();
+
+    console.log(`✅ Device added successfully: ${deviceSn}`);
+
+    res.json({
+      success: true,
+      message: 'Device added successfully',
+      device: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error('❌ Failed to add device to database:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add device to database',
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;
