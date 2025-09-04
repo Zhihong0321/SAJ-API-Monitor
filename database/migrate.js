@@ -13,19 +13,31 @@ async function runMigrations() {
     await client.connect();
     console.log('🔌 Connected to PostgreSQL database');
 
-    // Read and execute migration file
-    const migrationPath = path.join(__dirname, 'migrations', '001_create_devices_table.sql');
-    const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
+    // Read and execute migration files
+    const migrations = [
+      '001_create_devices_table.sql',
+      '002_create_plants_table.sql'
+    ];
 
     console.log('📋 Running database migrations...');
-    await client.query(migrationSQL);
+    
+    for (const migrationFile of migrations) {
+      const migrationPath = path.join(__dirname, 'migrations', migrationFile);
+      const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
+      
+      console.log(`  - Running ${migrationFile}...`);
+      await client.query(migrationSQL);
+      console.log(`  ✅ ${migrationFile} completed`);
+    }
     
     console.log('✅ Database migrations completed successfully');
     console.log('📊 Tables created:');
     console.log('  - saj_devices (device storage)');
+    console.log('  - saj_plants (plant storage)');
     console.log('  - saj_tokens (access token management)');
     console.log('  - saj_token_requests (token request tracking)');
-    console.log('  - saj_sync_history (sync operation history)');
+    console.log('  - saj_sync_history (device sync operation history)');
+    console.log('  - saj_plant_sync_history (plant sync operation history)');
 
   } catch (error) {
     console.error('❌ Migration failed:', error.message);

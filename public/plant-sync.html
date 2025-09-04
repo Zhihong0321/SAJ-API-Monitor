@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0f172a">
-  <title>Sync Devices - SAJ Solar Monitor</title>
+  <title>Sync Plants - SAJ Solar Monitor</title>
   <link rel="stylesheet" href="/design-system/styles.css">
   <style>
     .sync-progress {
@@ -60,53 +60,22 @@
   <!-- Header -->
   <header class="header">
     <a href="/" class="btn btn-ghost btn-sm">← Back</a>
-    <h1 class="header-title">Sync Devices</h1>
+    <h1 class="header-title">Sync Plants</h1>
     <div></div>
   </header>
 
   <!-- Main Content -->
   <main class="container">
-    <!-- Sync Options -->
+    <!-- Sync Status Card -->
     <section class="mb-6">
-      <div class="grid grid-cols-2 gap-4">
-        <!-- Plant Sync Card -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">🏭 Plants</h3>
-          </div>
-          <div class="card-content">
-            <p class="text-body-small mb-4">
-              Sync plant information from SAJ API to your local database.
-            </p>
-            <a href="/plant-sync" class="btn btn-primary btn-block">Sync Plants</a>
-          </div>
-        </div>
-        
-        <!-- Device Sync Card -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">📱 Devices</h3>
-          </div>
-          <div class="card-content">
-            <p class="text-body-small mb-4">
-              Sync device information from SAJ API to your local database.
-            </p>
-            <a href="#device-sync" class="btn btn-primary btn-block" onclick="document.getElementById('device-sync-section').scrollIntoView()">Sync Devices</a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Device Sync Status Card -->
-    <section id="device-sync-section" class="mb-6">
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">Device Synchronization</h2>
+          <h2 class="card-title">Plant Synchronization</h2>
           <span id="syncStatus" class="badge badge-offline">Ready</span>
         </div>
         <div class="card-content">
           <p class="text-body-small mb-4">
-            Synchronize your device list with the SAJ API server. This will fetch all registered devices and add new ones to your local database.
+            Synchronize your plant list with the SAJ API server. This will fetch all registered plants and add new ones to your local database.
           </p>
           
           <!-- Progress Bar -->
@@ -139,12 +108,12 @@
           </div>
         </div>
         
-        <div class="sync-step" data-step="devices">
+        <div class="sync-step" data-step="plants">
           <div class="flex items-center gap-3">
-            <div>📱</div>
+            <div>🏭</div>
             <div>
-              <div class="text-body">Fetch Device List</div>
-              <div class="text-caption">Retrieving devices from all pages</div>
+              <div class="text-body">Fetch Plant List</div>
+              <div class="text-caption">Retrieving plants from all pages</div>
             </div>
           </div>
         </div>
@@ -154,17 +123,7 @@
             <div>💾</div>
             <div>
               <div class="text-body">Update Database</div>
-              <div class="text-caption">Adding new devices to local storage</div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="sync-step" data-step="signatures">
-          <div class="flex items-center gap-3">
-            <div>🔐</div>
-            <div>
-              <div class="text-body">Generate Client Signatures</div>
-              <div class="text-caption">Pre-calculating API signatures</div>
+              <div class="text-caption">Adding new plants to local storage</div>
             </div>
           </div>
         </div>
@@ -182,8 +141,8 @@
               <div class="energy-label">Total Fetched</div>
             </div>
             <div class="text-center">
-              <div class="energy-value text-h2" id="newDevices" style="color: var(--color-solar-online);">--</div>
-              <div class="energy-label">New Devices</div>
+              <div class="energy-value text-h2" id="newPlants" style="color: var(--color-solar-online);">--</div>
+              <div class="energy-label">New Plants</div>
             </div>
           </div>
           
@@ -196,7 +155,7 @@
     <section class="mb-6">
       <h3 class="text-h3 mb-4">Sync Log</h3>
       <div id="syncLog" class="sync-log">
-        <div class="text-caption">Ready to start synchronization...</div>
+        <div class="text-caption">Ready to start plant synchronization...</div>
       </div>
     </section>
 
@@ -229,19 +188,19 @@
       <div class="nav-icon">🏭</div>
       <span>Plants</span>
     </a>
-    <a href="/sync" class="nav-item nav-item-active">
+    <a href="/sync" class="nav-item">
       <div class="nav-icon">🔄</div>
-      <span>Sync</span>
+      <span>Device Sync</span>
     </a>
-    <a href="/settings" class="nav-item">
-      <div class="nav-icon">⚙️</div>
-      <span>Settings</span>
+    <a href="/plant-sync" class="nav-item nav-item-active">
+      <div class="nav-icon">🌱</div>
+      <span>Plant Sync</span>
     </a>
   </nav>
 
   <script>
-    // Device Sync functionality
-    class DeviceSync {
+    // Plant Sync functionality
+    class PlantSync {
       constructor() {
         this.isRunning = false;
         this.init();
@@ -263,45 +222,37 @@
         this.isRunning = true;
         this.updateSyncButton(true);
         this.resetProgress();
-        this.logMessage('🚀 Starting device synchronization...');
+        this.logMessage('🚀 Starting plant synchronization...');
 
         try {
-          // Step 1: Get Access Token
+          // Step 1: Get Access Token (using shared token system)
           this.updateStep('token', 'active');
-          this.logMessage('🔑 Requesting access token from SAJ API...');
-          const tokenResult = await this.getAccessToken();
+          this.logMessage('🔑 Getting access token from SAJ API...');
+          // Plants API uses internal token management, so this step is automatic
           this.updateStep('token', 'completed');
-          this.logMessage(`✅ Access token obtained (expires in ${tokenResult.expires/3600} hours)`);
-          this.updateProgress(25);
+          this.logMessage('✅ Access token ready');
+          this.updateProgress(33);
 
-          // Step 2: Fetch Devices
-          this.updateStep('devices', 'active');
-          this.logMessage('📱 Fetching device list from SAJ API...');
-          const devices = await this.fetchAllDevices(tokenResult.access_token);
-          this.updateStep('devices', 'completed');
-          this.logMessage(`✅ Fetched ${devices.length} devices from API`);
-          this.updateProgress(50);
+          // Step 2: Fetch Plants
+          this.updateStep('plants', 'active');
+          this.logMessage('🏭 Fetching plant list from SAJ API...');
+          const plants = await this.fetchAllPlants();
+          this.updateStep('plants', 'completed');
+          this.logMessage(`✅ Fetched ${plants.length} plants from API`);
+          this.updateProgress(66);
 
           // Step 3: Update Database
           this.updateStep('database', 'active');
           this.logMessage('💾 Updating local database...');
-          const dbResult = await this.updateDatabase(devices);
+          const dbResult = await this.updateDatabase(plants);
           this.updateStep('database', 'completed');
-          this.logMessage(`✅ Added ${dbResult.newDevices} new devices to database`);
-          this.updateProgress(75);
-
-          // Step 4: Generate Client Signatures
-          this.updateStep('signatures', 'active');
-          this.logMessage('🔐 Generating client signatures for new devices...');
-          await this.generateClientSignatures(dbResult.newDeviceIds);
-          this.updateStep('signatures', 'completed');
-          this.logMessage('✅ Client signatures generated successfully');
+          this.logMessage(`✅ Added ${dbResult.newPlants} new plants to database`);
           this.updateProgress(100);
 
           // Show results
-          this.showResults(devices.length, dbResult.newDevices);
+          this.showResults(plants.length, dbResult.newPlants);
           this.updateSyncStatus('success', 'Completed');
-          this.logMessage('🎉 Device synchronization completed successfully!');
+          this.logMessage('🎉 Plant synchronization completed successfully!');
 
         } catch (error) {
           this.handleSyncError(error);
@@ -311,55 +262,45 @@
         }
       }
 
-      async getAccessToken() {
-        const response = await fetch('/api/saj/token', {
-          method: 'POST'
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to get access token: ${response.statusText}`);
-        }
-        
-        return response.json();
-      }
-
-      async fetchAllDevices(accessToken) {
-        const allDevices = [];
+      async fetchAllPlants() {
+        const allPlants = [];
         let page = 1;
         let hasMore = true;
 
         while (hasMore) {
           this.logMessage(`📄 Fetching page ${page}...`);
           
-          const response = await fetch(`/api/saj/devices?page=${page}`, {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`
-            }
-          });
+          const response = await fetch(`/api/saj/plants?pageNum=${page}&pageSize=100`);
 
           if (!response.ok) {
-            throw new Error(`Failed to fetch devices page ${page}: ${response.statusText}`);
+            throw new Error(`Failed to fetch plants page ${page}: ${response.statusText}`);
           }
 
           const data = await response.json();
-          allDevices.push(...data.rows);
           
-          this.logMessage(`📄 Page ${page}: ${data.rows.length} devices`);
-          
-          hasMore = page < data.totalPage;
-          page++;
+          // SAJ plants API returns data directly, not nested in data.rows
+          if (data.rows && Array.isArray(data.rows)) {
+            allPlants.push(...data.rows);
+            this.logMessage(`📄 Page ${page}: ${data.rows.length} plants`);
+            
+            // Check if we have more pages
+            hasMore = data.totalPage > page;
+            page++;
+          } else {
+            throw new Error('Invalid plants API response format');
+          }
         }
 
-        return allDevices;
+        return allPlants;
       }
 
-      async updateDatabase(devices) {
-        const response = await fetch('/api/devices/sync', {
+      async updateDatabase(plants) {
+        const response = await fetch('/api/plants/sync', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ devices })
+          body: JSON.stringify({ plants })
         });
 
         if (!response.ok) {
@@ -369,24 +310,8 @@
         return response.json();
       }
 
-      async generateClientSignatures(deviceIds) {
-        if (deviceIds.length === 0) return;
-
-        const response = await fetch('/api/devices/generate-signatures', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ deviceIds })
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to generate client signatures: ${response.statusText}`);
-        }
-      }
-
       handleSyncError(error) {
-        console.error('Sync error:', error);
+        console.error('Plant sync error:', error);
         this.logMessage(`❌ Error: ${error.message}`);
         this.updateSyncStatus('error', 'Failed');
         
@@ -434,11 +359,11 @@
         status.className = `badge badge-${type === 'success' ? 'online' : type === 'error' ? 'alarm' : 'offline'}`;
       }
 
-      showResults(totalFetched, newDevices) {
+      showResults(totalFetched, newPlants) {
         document.getElementById('totalFetched').textContent = totalFetched;
-        document.getElementById('newDevices').textContent = newDevices;
+        document.getElementById('newPlants').textContent = newPlants;
         document.getElementById('syncResultMessage').textContent = 
-          `Successfully synchronized ${totalFetched} devices. ${newDevices} new devices were added to your system.`;
+          `Successfully synchronized ${totalFetched} plants. ${newPlants} new plants were added to your system.`;
         document.getElementById('syncResults').style.display = 'block';
       }
 
@@ -453,7 +378,7 @@
 
       async loadLastSyncInfo() {
         try {
-          const response = await fetch('/api/sync/history?limit=1');
+          const response = await fetch('/api/plants/sync/history?limit=1');
           if (response.ok) {
             const history = await response.json();
             if (history.length > 0) {
@@ -462,7 +387,7 @@
               document.getElementById('lastSyncInfo').innerHTML = `
                 <div><strong>Last sync:</strong> ${date}</div>
                 <div><strong>Status:</strong> ${lastSync.success ? '✅ Success' : '❌ Failed'}</div>
-                <div><strong>Devices added:</strong> ${lastSync.new_devices_added || 0}</div>
+                <div><strong>Plants added:</strong> ${lastSync.new_plants_added || 0}</div>
                 ${lastSync.error_message ? `<div class="text-error">Error: ${lastSync.error_message}</div>` : ''}
               `;
             } else {
@@ -477,7 +402,7 @@
 
     // Initialize sync page when page loads
     document.addEventListener('DOMContentLoaded', () => {
-      new DeviceSync();
+      new PlantSync();
     });
   </script>
 </body>

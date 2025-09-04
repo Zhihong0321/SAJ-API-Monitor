@@ -1115,4 +1115,206 @@ router.get('/saj/token/status', async (req, res) => {
   }
 });
 
+// =====================================================
+// PLANT MANAGEMENT ENDPOINTS
+// =====================================================
+
+// Sync plants to database (add only new plants)
+router.post('/plants/sync', async (req, res) => {
+  const client = await getDBClient();
+  
+  try {
+    await client.connect();
+    const { plants } = req.body;
+    
+    console.log(`🏭 Syncing ${plants.length} plants to database...`);
+    
+    // Start sync history record
+    const syncResult = await client.query(
+      'INSERT INTO saj_plant_sync_history (total_plants_from_api) VALUES ($1) RETURNING id',
+      [plants.length]
+    );
+    const syncId = syncResult.rows[0].id;
+    
+    let newPlantsAdded = 0;
+    let plantsUpdated = 0;
+    const newPlantIds = [];
+    
+    // Process each plant
+    for (const plant of plants) {
+      try {
+        // Check if plant already exists
+        const existingPlant = await client.query(
+          'SELECT id FROM saj_plants WHERE plant_id = $1',
+          [plant.plantId]
+        );
+        
+        if (existingPlant.rows.length === 0) {
+          // Insert new plant
+          const insertResult = await client.query(`
+            INSERT INTO saj_plants (
+              plant_id, plant_no, plant_name, remark
+            ) VALUES ($1, $2, $3, $4)
+            RETURNING id
+          `, [
+            plant.plantId,
+            plant.plantNo || null,
+            plant.plantName || null,
+            plant.remark || null
+          ]);
+          
+          newPlantsAdded++;
+          newPlantIds.push(insertResult.rows[0].id);
+          console.log(`➕ Added new plant: ${plant.plantId} (${plant.plantName || 'No name'})`);
+          
+        } else {
+          // Update existing plant info
+          await client.query(`
+            UPDATE saj_plants SET 
+              plant_no = $1,
+              plant_name = $2,
+              remark = $3,
+              updated_at = NOW()
+            WHERE plant_id = $4
+          `, [plant.plantNo || null, plant.plantName || null, plant.remark || null, plant.plantId]);
+          
+          plantsUpdated++;
+          console.log(`🔄 Updated plant: ${plant.plantId} (${plant.plantName || 'No name'})`);
+        }
+        
+      } catch (plantError) {
+        console.error(`❌ Error processing plant ${plant.plantId}:`, plantError.message);
+      }
+    }
+    
+    // Update sync history
+    await client.query(`
+      UPDATE saj_plant_sync_history SET 
+        sync_completed_at = NOW(),
+        new_plants_added = $1,
+        plants_updated = $2,
+        success = TRUE
+      WHERE id = $3
+    `, [newPlantsAdded, plantsUpdated, syncId]);
+    
+    console.log(`✅ Plant sync completed: ${newPlantsAdded} new, ${plantsUpdated} updated`);
+    
+    res.json({
+      success: true,
+      newPlants: newPlantsAdded,
+      updatedPlants: plantsUpdated,
+      totalProcessed: plants.length,
+      newPlantIds
+    });
+    
+  } catch (error) {
+    console.error('❌ Plant database sync error:', error.message);
+    
+    // Update sync history with error
+    try {
+      await client.query(`
+        UPDATE saj_plant_sync_history SET 
+          sync_completed_at = NOW(),
+          success = FALSE,
+          error_message = $1
+        WHERE id = (SELECT id FROM saj_plant_sync_history ORDER BY sync_started_at DESC LIMIT 1)
+      `, [error.message]);
+    } catch (updateError) {
+      console.error('Failed to update plant sync history:', updateError.message);
+    }
+    
+    res.status(500).json({ error: 'Plant database sync failed', message: error.message });
+    
+  } finally {
+    await client.end();
+  }
+});
+
+// Get plants from local database
+router.get('/plants', async (req, res) => {
+  const client = await getDBClient();
+
+  try {
+    await client.connect();
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const offset = parseInt(req.query.offset) || 0;
+
+    let query = `
+      SELECT * FROM saj_plants
+      ORDER BY updated_at DESC, created_at DESC
+    `;
+    let params = [];
+
+    if (limit) {
+      query += ` LIMIT $1 OFFSET $2`;
+      params = [limit, offset];
+    } else if (offset > 0) {
+      query += ` OFFSET $1`;
+      params = [offset];
+    }
+
+    const result = await client.query(query, params);
+
+    res.json(result.rows);
+
+  } catch (error) {
+    console.error('❌ Failed to fetch plants:', error.message);
+    res.status(500).json({ error: 'Failed to fetch plants', message: error.message });
+
+  } finally {
+    await client.end();
+  }
+});
+
+// Get plant summary statistics
+router.get('/plants/summary', async (req, res) => {
+  const client = await getDBClient();
+
+  try {
+    await client.connect();
+
+    const result = await client.query(`
+      SELECT
+        COUNT(*) as total,
+        COUNT(CASE WHEN remark IS NULL OR remark = '' THEN 1 END) as active,
+        COUNT(CASE WHEN remark IS NOT NULL AND remark != '' THEN 1 END) as with_remarks
+      FROM saj_plants
+    `);
+
+    res.json(result.rows[0]);
+
+  } catch (error) {
+    console.error('❌ Failed to get plant summary:', error.message);
+    res.status(500).json({ error: 'Failed to get plant summary', message: error.message });
+
+  } finally {
+    await client.end();
+  }
+});
+
+// Get plant sync history
+router.get('/plants/sync/history', async (req, res) => {
+  const client = await getDBClient();
+
+  try {
+    await client.connect();
+    const limit = parseInt(req.query.limit) || 10;
+
+    const result = await client.query(`
+      SELECT * FROM saj_plant_sync_history
+      ORDER BY sync_started_at DESC
+      LIMIT $1
+    `, [limit]);
+
+    res.json(result.rows);
+
+  } catch (error) {
+    console.error('❌ Failed to fetch plant sync history:', error.message);
+    res.status(500).json({ error: 'Failed to fetch plant sync history', message: error.message });
+
+  } finally {
+    await client.end();
+  }
+});
+
 module.exports = router;
