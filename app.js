@@ -77,6 +77,10 @@ app.get('/plant-sync', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'plant-sync.html'));
 });
 
+app.get('/plant-generation', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'plant-generation.html'));
+});
+
 app.get('/offline-devices', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'offline-devices.html'));
 });

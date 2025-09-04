@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <title>Plant Generation - SAJ Solar Monitor</title>
+  <link rel="stylesheet" href="/design-system/styles.css">
+  <style>
+    body {
+      padding-bottom: 80px;
+    }
+
+    .generation-card {
+      background: var(--color-bg-secondary);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      margin-bottom: var(--space-3);
+      border: 1px solid var(--color-bg-tertiary);
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .status-online {
+      background: var(--color-solar-online);
+      color: white;
+    }
+
+    .status-offline {
+      background: var(--color-solar-offline);
+      color: white;
+    }
+
+    .power-display {
+      text-align: center;
+      padding: var(--space-6);
+      background: linear-gradient(135deg, var(--color-solar-energy), var(--color-primary-500));
+      border-radius: var(--radius-lg);
+      color: white;
+      margin-bottom: var(--space-4);
+    }
+
+    .power-value {
+      font-size: 3rem;
+      font-weight: bold;
+      line-height: 1;
+      margin-bottom: var(--space-2);
+    }
+
+    .power-unit {
+      font-size: 1.125rem;
+      opacity: 0.9;
+    }
+
+    .energy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+
+    .energy-item {
+      text-align: center;
+      padding: var(--space-3);
+      background: var(--color-bg-primary);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-bg-tertiary);
+    }
+
+    .energy-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-1);
+    }
+
+    .energy-label {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .battery-display {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      background: var(--color-bg-primary);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-bg-tertiary);
+      margin-bottom: var(--space-4);
+    }
+
+    .battery-icon {
+      font-size: 2rem;
+    }
+
+    .battery-info {
+      flex: 1;
+    }
+
+    .battery-percentage {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .battery-label {
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+    }
+
+    .section-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-3);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .loading {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .error-state {
+      text-align: center;
+      padding: var(--space-8) var(--space-4);
+      color: var(--color-text-secondary);
+    }
+
+    .last-updated {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      margin-top: var(--space-4);
+    }
+
+    .plant-selector {
+      margin-bottom: var(--space-4);
+    }
+
+    .plant-selector select {
+      width: 100%;
+      padding: var(--space-3);
+      border: 1px solid var(--color-bg-tertiary);
+      border-radius: var(--radius-md);
+      background: var(--color-bg-secondary);
+      color: var(--color-text-primary);
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <a href="/plants" class="btn btn-ghost btn-sm">← Back to Plants</a>
+    <h1 class="header-title">Plant Generation</h1>
+    <button id="refreshBtn" class="btn btn-ghost btn-sm">
+      <span id="refreshIcon">🔄</span>
+    </button>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <!-- Plant Selector -->
+    <section class="plant-selector">
+      <select id="plantSelector">
+        <option value="">Select a plant...</option>
+      </select>
+    </section>
+
+    <!-- Plant Info -->
+    <section id="plantInfo" class="mb-6" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <h2 id="plantName" class="card-title">Plant Name</h2>
+          <span id="plantStatus" class="status-indicator status-offline">
+            <span>●</span>
+            <span>Offline</span>
+          </span>
+        </div>
+        <div class="card-content">
+          <div id="plantDetails" class="text-body-small"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Current Power -->
+    <section id="powerSection" class="mb-6" style="display: none;">
+      <div class="power-display">
+        <div id="currentPower" class="power-value">0</div>
+        <div class="power-unit">W</div>
+        <div class="text-body-small" style="opacity: 0.8; margin-top: var(--space-2);">Current Power Output</div>
+      </div>
+    </section>
+
+    <!-- Battery Status -->
+    <section id="batterySection" class="mb-6" style="display: none;">
+      <h3 class="section-title">🔋 Battery Status</h3>
+      <div class="battery-display">
+        <div class="battery-icon">🔋</div>
+        <div class="battery-info">
+          <div id="batteryPercentage" class="battery-percentage">0%</div>
+          <div class="battery-label">Battery Charge</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Daily Energy -->
+    <section id="dailySection" class="mb-6" style="display: none;">
+      <h3 class="section-title">📅 Today's Energy</h3>
+      <div class="energy-grid">
+        <div class="energy-item">
+          <div id="todayPvEnergy" class="energy-value">0</div>
+          <div class="energy-label">PV Generation</div>
+        </div>
+        <div class="energy-item">
+          <div id="todayChargeEnergy" class="energy-value">0</div>
+          <div class="energy-label">Battery Charged</div>
+        </div>
+        <div class="energy-item">
+          <div id="todayDisChargeEnergy" class="energy-value">0</div>
+          <div class="energy-label">Battery Discharged</div>
+        </div>
+        <div class="energy-item">
+          <div id="todayBuyEnergy" class="energy-value">0</div>
+          <div class="energy-label">Grid Purchase</div>
+        </div>
+        <div class="energy-item">
+          <div id="todaySellEnergy" class="energy-value">0</div>
+          <div class="energy-label">Grid Feed-in</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cumulative Energy -->
+    <section id="cumulativeSection" class="mb-6" style="display: none;">
+      <h3 class="section-title">📊 Cumulative Energy</h3>
+      <div class="energy-grid">
+        <div class="energy-item">
+          <div id="monthPvEnergy" class="energy-value">0</div>
+          <div class="energy-label">This Month</div>
+        </div>
+        <div class="energy-item">
+          <div id="yearPvEnergy" class="energy-value">0</div>
+          <div class="energy-label">This Year</div>
+        </div>
+        <div class="energy-item">
+          <div id="totalPvEnergy" class="energy-value">0</div>
+          <div class="energy-label">Total Generation</div>
+        </div>
+        <div class="energy-item">
+          <div id="totalBuyEnergy" class="energy-value">0</div>
+          <div class="energy-label">Total Grid Purchase</div>
+        </div>
+        <div class="energy-item">
+          <div id="totalSellEnergy" class="energy-value">0</div>
+          <div class="energy-label">Total Grid Feed-in</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Last Updated -->
+    <section id="lastUpdatedSection" class="last-updated" style="display: none;">
+      <div>Last updated: <span id="lastUpdated">--</span></div>
+    </section>
+
+    <!-- Loading State -->
+    <section id="loadingState" class="card text-center" style="display: none;">
+      <div class="card-content">
+        <p class="text-body">Loading generation data...</p>
+      </div>
+    </section>
+
+    <!-- Error State -->
+    <section id="errorState" class="card text-center" style="display: none;">
+      <div class="card-content">
+        <p id="errorMessage" class="text-body-small mb-4">Failed to load generation data.</p>
+        <button onclick="location.reload()" class="btn btn-primary">Try Again</button>
+      </div>
+    </section>
+
+    <!-- Empty State -->
+    <section id="emptyState" class="card text-center">
+      <div class="card-content">
+        <p class="text-body-small mb-4">Select a plant from the dropdown above to view its generation data.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="/" class="nav-item">
+      <div class="nav-icon">🏠</div>
+      <span>Dashboard</span>
+    </a>
+    <a href="/devices" class="nav-item">
+      <div class="nav-icon">📱</div>
+      <span>Devices</span>
+    </a>
+    <a href="/plants" class="nav-item nav-item-active">
+      <div class="nav-icon">🏭</div>
+      <span>Plants</span>
+    </a>
+    <a href="/sync" class="nav-item">
+      <div class="nav-icon">🔄</div>
+      <span>Sync</span>
+    </a>
+    <a href="/settings" class="nav-item">
+      <div class="nav-icon">⚙️</div>
+      <span>Settings</span>
+    </a>
+  </nav>
+
+  <script>
+    // Plant Generation functionality
+    class PlantGeneration {
+      constructor() {
+        this.selectedPlantId = null;
+        this.selectedPlant = null;
+        this.init();
+      }
+
+      async init() {
+        await this.loadPlantList();
+        this.setupEventListeners();
+        
+        // Check URL parameters for pre-selected plant
+        const urlParams = new URLSearchParams(window.location.search);
+        const plantId = urlParams.get('plantId');
+        if (plantId) {
+          document.getElementById('plantSelector').value = plantId;
+          await this.selectPlant(plantId);
+        }
+      }
+
+      setupEventListeners() {
+        const plantSelector = document.getElementById('plantSelector');
+        plantSelector.addEventListener('change', (e) => {
+          if (e.target.value) {
+            this.selectPlant(e.target.value);
+          } else {
+            this.showEmptyState();
+          }
+        });
+
+        const refreshBtn = document.getElementById('refreshBtn');
+        refreshBtn.addEventListener('click', () => this.refreshData());
+      }
+
+      async loadPlantList() {
+        try {
+          const response = await fetch('/api/plants?limit=100');
+          if (!response.ok) throw new Error('Failed to fetch plants');
+          
+          const plants = await response.json();
+          this.populatePlantSelector(plants);
+        } catch (error) {
+          console.error('Failed to load plant list:', error);
+          this.showError('Failed to load plant list');
+        }
+      }
+
+      populatePlantSelector(plants) {
+        const selector = document.getElementById('plantSelector');
+        
+        // Clear existing options except the first one
+        while (selector.children.length > 1) {
+          selector.removeChild(selector.lastChild);
+        }
+        
+        // Add plant options
+        plants.forEach(plant => {
+          const option = document.createElement('option');
+          option.value = plant.plant_id;
+          option.textContent = `${plant.plant_name || 'Unnamed Plant'} (${plant.plant_id})`;
+          selector.appendChild(option);
+        });
+      }
+
+      async selectPlant(plantId) {
+        this.selectedPlantId = plantId;
+        this.showLoading(true);
+        this.hideAllSections();
+
+        try {
+          // Get plant info
+          const plants = await this.fetchPlants();
+          this.selectedPlant = plants.find(p => p.plant_id === plantId);
+          
+          // Load generation data
+          await this.loadGenerationData(plantId);
+          
+        } catch (error) {
+          console.error('Failed to load plant data:', error);
+          this.showError('Failed to load plant data: ' + error.message);
+        } finally {
+          this.showLoading(false);
+        }
+      }
+
+      async fetchPlants() {
+        const response = await fetch('/api/plants?limit=100');
+        if (!response.ok) throw new Error('Failed to fetch plants');
+        return response.json();
+      }
+
+      async loadGenerationData(plantId) {
+        const response = await fetch(`/api/plants/${plantId}/generation`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch generation data');
+        }
+        
+        const generationData = await response.json();
+        this.renderGenerationData(generationData);
+      }
+
+      renderGenerationData(response) {
+        const data = response.data;
+        
+        // Show plant info
+        this.renderPlantInfo();
+        
+        // Render all data sections
+        this.renderPowerData(data);
+        this.renderBatteryData(data);
+        this.renderDailyData(data);
+        this.renderCumulativeData(data);
+        this.renderLastUpdated(data);
+        
+        // Show all sections
+        this.showAllSections();
+      }
+
+      renderPlantInfo() {
+        if (!this.selectedPlant) return;
+        
+        const plantName = document.getElementById('plantName');
+        const plantStatus = document.getElementById('plantStatus');
+        const plantDetails = document.getElementById('plantDetails');
+        
+        plantName.textContent = this.selectedPlant.plant_name || 'Unnamed Plant';
+        
+        // Set status based on remark
+        if (this.selectedPlant.remark && this.selectedPlant.remark.trim() !== '') {
+          plantStatus.className = 'status-indicator status-offline';
+          plantStatus.innerHTML = '<span>●</span><span>Issues</span>';
+        } else {
+          plantStatus.className = 'status-indicator status-online';
+          plantStatus.innerHTML = '<span>●</span><span>Active</span>';
+        }
+        
+        plantDetails.innerHTML = `
+          <div><strong>Plant ID:</strong> ${this.selectedPlant.plant_id}</div>
+          ${this.selectedPlant.plant_no ? `<div><strong>Plant No:</strong> ${this.selectedPlant.plant_no}</div>` : ''}
+          ${this.selectedPlant.remark ? `<div><strong>Remark:</strong> ${this.selectedPlant.remark}</div>` : ''}
+        `;
+      }
+
+      renderPowerData(data) {
+        const powerValue = parseFloat(data.powerNow) || 0;
+        document.getElementById('currentPower').textContent = this.formatPower(powerValue);
+      }
+
+      renderBatteryData(data) {
+        const batteryPercent = parseFloat(data.batEnergyPercent) || 0;
+        document.getElementById('batteryPercentage').textContent = `${batteryPercent.toFixed(1)}%`;
+      }
+
+      renderDailyData(data) {
+        document.getElementById('todayPvEnergy').textContent = this.formatEnergy(data.todayPvEnergy);
+        document.getElementById('todayChargeEnergy').textContent = this.formatEnergy(data.todayChargeEnergy);
+        document.getElementById('todayDisChargeEnergy').textContent = this.formatEnergy(data.todayDisChargeEnergy);
+        document.getElementById('todayBuyEnergy').textContent = this.formatEnergy(data.todayBuyEnergy);
+        document.getElementById('todaySellEnergy').textContent = this.formatEnergy(data.todaySellEnergy);
+      }
+
+      renderCumulativeData(data) {
+        document.getElementById('monthPvEnergy').textContent = this.formatEnergy(data.monthPvEnergy);
+        document.getElementById('yearPvEnergy').textContent = this.formatEnergy(data.yearPvEnergy);
+        document.getElementById('totalPvEnergy').textContent = this.formatEnergy(data.totalPvEnergy);
+        document.getElementById('totalBuyEnergy').textContent = this.formatEnergy(data.totalBuyEnergy);
+        document.getElementById('totalSellEnergy').textContent = this.formatEnergy(data.totalSellEnergy);
+      }
+
+      renderLastUpdated(data) {
+        const lastUpdated = document.getElementById('lastUpdated');
+        if (data.updateDate) {
+          const date = new Date(data.updateDate);
+          lastUpdated.textContent = date.toLocaleString();
+        } else {
+          lastUpdated.textContent = 'Unknown';
+        }
+      }
+
+      formatPower(watts) {
+        if (watts >= 1000000) {
+          return (watts / 1000000).toFixed(2) + 'MW';
+        } else if (watts >= 1000) {
+          return (watts / 1000).toFixed(2) + 'kW';
+        }
+        return watts.toFixed(0);
+      }
+
+      formatEnergy(kwh) {
+        const energy = parseFloat(kwh) || 0;
+        if (energy >= 1000000) {
+          return (energy / 1000000).toFixed(2) + 'GWh';
+        } else if (energy >= 1000) {
+          return (energy / 1000).toFixed(2) + 'MWh';
+        }
+        return energy.toFixed(1) + 'kWh';
+      }
+
+      async refreshData() {
+        if (!this.selectedPlantId) return;
+        
+        const refreshIcon = document.getElementById('refreshIcon');
+        refreshIcon.style.animation = 'spin 1s linear infinite';
+
+        await this.loadGenerationData(this.selectedPlantId);
+
+        setTimeout(() => {
+          refreshIcon.style.animation = '';
+        }, 1000);
+      }
+
+      showLoading(loading) {
+        document.body.classList.toggle('loading', loading);
+        document.getElementById('loadingState').style.display = loading ? 'block' : 'none';
+      }
+
+      showError(message) {
+        document.getElementById('errorMessage').textContent = message;
+        document.getElementById('errorState').style.display = 'block';
+        this.hideAllSections();
+      }
+
+      showEmptyState() {
+        document.getElementById('emptyState').style.display = 'block';
+        this.hideAllSections();
+      }
+
+      hideAllSections() {
+        document.getElementById('plantInfo').style.display = 'none';
+        document.getElementById('powerSection').style.display = 'none';
+        document.getElementById('batterySection').style.display = 'none';
+        document.getElementById('dailySection').style.display = 'none';
+        document.getElementById('cumulativeSection').style.display = 'none';
+        document.getElementById('lastUpdatedSection').style.display = 'none';
+        document.getElementById('errorState').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'none';
+      }
+
+      showAllSections() {
+        document.getElementById('plantInfo').style.display = 'block';
+        document.getElementById('powerSection').style.display = 'block';
+        document.getElementById('batterySection').style.display = 'block';
+        document.getElementById('dailySection').style.display = 'block';
+        document.getElementById('cumulativeSection').style.display = 'block';
+        document.getElementById('lastUpdatedSection').style.display = 'block';
+      }
+    }
+
+    // Initialize plant generation page when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      new PlantGeneration();
+    });
+  </script>
+</body>
+</html>

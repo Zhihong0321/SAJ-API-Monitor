@@ -237,9 +237,9 @@
               <div><strong>Last Updated:</strong> ${new Date(plant.updated_at).toLocaleDateString()}</div>
             </div>
             <div class="plant-actions">
-              <button class="btn btn-secondary btn-sm" onclick="window.alert('Plant detail page coming soon!')">
-                📊 View Details
-              </button>
+              <a href="/plant-generation?plantId=${plant.plant_id}" class="btn btn-primary btn-sm">
+                📊 View Generation
+              </a>
             </div>
           </div>
         `).join('');

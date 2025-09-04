@@ -1317,4 +1317,169 @@ router.get('/plants/sync/history', async (req, res) => {
   }
 });
 
+// Get plant generation data
+router.get('/plants/:plantId/generation', async (req, res) => {
+  const { plantId } = req.params;
+  const { clientDate } = req.query;
+
+  if (!plantId) {
+    return res.status(400).json({
+      error: 'Missing required parameter',
+      message: 'plantId is required'
+    });
+  }
+
+  try {
+    console.log(`🏭 Getting generation data for plant: ${plantId}`);
+    const currentDate = clientDate || new Date().toISOString().slice(0, 19).replace('T', ' ');
+    console.log(`📅 Using client date: ${currentDate}`);
+
+    // Get access token using cached/shared token logic
+    let accessToken = null;
+
+    try {
+      // First, try to get a valid cached token from database
+      const client = await getDBClient();
+      await client.connect();
+
+      const tokenResult = await client.query(
+        'SELECT access_token, expires_at FROM saj_tokens WHERE is_active = TRUE AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1'
+      );
+
+      await client.end();
+
+      if (tokenResult.rows.length > 0) {
+        accessToken = tokenResult.rows[0].access_token;
+        console.log(`✅ Using cached access token: ${accessToken.substring(0, 20)}...`);
+      }
+    } catch (dbError) {
+      console.log(`⚠️ Database token check failed: ${dbError.message}`);
+    }
+
+    // If no valid cached token, request a new one
+    if (!accessToken) {
+      console.log(`🔑 Requesting new access token for plant generation data`);
+      console.log(`🔧 Using appId: ${SAJ_CONFIG.appId}`);
+
+      const tokenResponse = await axios.get(`${SAJ_CONFIG.baseUrl}/access_token`, {
+        params: {
+          appId: SAJ_CONFIG.appId,
+          appSecret: SAJ_CONFIG.appSecret
+        },
+        headers: SAJ_CONFIG.headers,
+        timeout: 10000
+      });
+
+      console.log(`🔑 Token response code: ${tokenResponse.data.code}`);
+
+      if (tokenResponse.data.code !== 200) {
+        console.error(`❌ Token request failed:`, tokenResponse.data);
+        throw new Error(`Failed to get access token: ${tokenResponse.data.msg || tokenResponse.data.code}`);
+      }
+
+      const tokenData = tokenResponse.data.data;
+      accessToken = tokenData?.access_token;
+
+      if (!accessToken) {
+        console.error(`❌ No access token in response:`, tokenResponse.data);
+        throw new Error('Access token not found in response');
+      }
+
+      // Store the new token in database for sharing
+      try {
+        const client = await getDBClient();
+        await client.connect();
+
+        // Deactivate old tokens
+        await client.query('UPDATE saj_tokens SET is_active = FALSE WHERE is_active = TRUE');
+
+        // Insert new token
+        const expiresAt = new Date(Date.now() + (tokenData.expires * 1000));
+        await client.query(
+          'INSERT INTO saj_tokens (access_token, expires_at) VALUES ($1, $2)',
+          [accessToken, expiresAt]
+        );
+
+        await client.end();
+        console.log(`✅ New access token obtained and cached: ${accessToken.substring(0, 20)}...`);
+      } catch (dbError) {
+        console.log(`⚠️ Failed to cache token: ${dbError.message}`);
+      }
+    }
+
+    console.log(`✅ Access token obtained: ${accessToken.substring(0, 20)}...`);
+    
+    // Get plant generation data
+    console.log(`📡 Making plant generation API call...`);
+    const response = await axios.get(`${SAJ_CONFIG.baseUrl}/plant/energy`, {
+      params: {
+        plantId: plantId,
+        clientDate: currentDate
+      },
+      headers: {
+        'Content-Type': 'application/json',
+        ...SAJ_CONFIG.headers,
+        accessToken: accessToken
+      },
+      timeout: 15000
+    });
+
+    console.log(`📡 Plant generation API response code: ${response.data.code}`);
+
+    if (response.data.code === 200) {
+      console.log('✅ Plant generation data retrieved successfully');
+      
+      // Add metadata about the request
+      const responseWithMeta = {
+        ...response.data,
+        requestInfo: {
+          plantId,
+          clientDate: currentDate,
+          requestTime: new Date().toISOString()
+        }
+      };
+      
+      res.json(responseWithMeta);
+    } else {
+      // Handle specific SAJ API error codes
+      console.log(`❌ SAJ API returned error code: ${response.data.code}, message: ${response.data.msg}`);
+
+      let httpStatus = 500;
+      let userMessage = response.data.msg || 'Unknown API error';
+
+      // Handle specific SAJ API error codes
+      if (response.data.code === 200010) {
+        httpStatus = 401;
+        userMessage = 'Authentication failed - invalid token or expired session';
+      } else if (response.data.code === 200011) {
+        httpStatus = 403;
+        userMessage = 'Access forbidden - invalid plant or insufficient permissions';
+      } else if (response.data.code === 200001) {
+        httpStatus = 400;
+        userMessage = 'Invalid request parameters';
+      }
+
+      res.status(httpStatus).json({
+        error: 'SAJ API Error',
+        message: userMessage,
+        code: response.data.code,
+        originalMessage: response.data.msg
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Failed to get plant generation data:', error.message);
+    
+    if (error.response) {
+      res.status(error.response.status).json({
+        error: 'SAJ API Error', 
+        message: error.response.data?.msg || error.message,
+        status: error.response.status
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to get plant generation data', message: error.message });
+    }
+  }
+});
+
 module.exports = router;
