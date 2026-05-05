@@ -142,6 +142,7 @@ historical-summary-*.json
 realtime-data-*.json
 filtered-chart-data.json
 power-generation-analysis.json
+generation-data-*.json
 
 # Analysis and test scripts
 analyze-historical-data.js

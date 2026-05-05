@@ -1,82 +1,87 @@
 /* SAJ Solar Monitor - Main CSS File */
-/* Mobile-first dark theme design system */
+/* Eternalgy Design System v2 (light + green, mobile-first) */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 /* CSS Variables (Design Tokens) */
 :root {
-  /* Primary Colors */
-  --color-primary-50: #fff7ed;
-  --color-primary-100: #ffedd5;
-  --color-primary-200: #fed7aa;
-  --color-primary-300: #fdba74;
-  --color-primary-400: #fb923c;
-  --color-primary-500: #f97316;
-  --color-primary-600: #ea580c;
-  --color-primary-700: #c2410c;
-  --color-primary-800: #9a3412;
-  --color-primary-900: #7c2d12;
+  /* Eternalgy greens (signal) */
+  --color-primary-500: #16a34a; /* primary */
+  --color-primary-600: #15803d; /* hover */
+  --color-primary-700: #166534; /* pressed */
+  --color-primary-100: #dcfce7; /* tint bg */
+  --color-primary-200: #86efac; /* tint border */
 
-  /* Dark Theme Base */
-  --color-bg-primary: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-bg-tertiary: #334155;
-  
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #cbd5e1;
-  --color-text-muted: #94a3b8;
-  --color-text-disabled: #64748b;
-  
-  --color-border-primary: #374151;
-  --color-border-secondary: #4b5563;
-  --color-border-accent: #6b7280;
+  /* App shell */
+  --color-page-bg: #bbf7d0;
+  --color-app-bg: #f1f5f1;
+  --color-navbar-bg: #0d1f0f;
+  --color-dark-card: #1a2e1c;
+  --color-darkest-card: #091407;
 
-  /* Solar Specific Colors */
-  --color-solar-energy: #facc15;
-  --color-solar-online: #22c55e;
-  --color-solar-offline: #6b7280;
-  --color-solar-alarm: #ef4444;
-  --color-solar-grid: #06b6d4;
-  --color-solar-battery: #8b5cf6;
+  /* Map legacy names -> new system (keeps pages working) */
+  --color-bg-primary: var(--color-page-bg);
+  --color-bg-secondary: #ffffff; /* cards */
+  --color-bg-tertiary: #f8faf8; /* subtle panels */
 
-  /* Status Colors */
-  --color-success-bg: #065f46;
-  --color-success-text: #d1fae5;
-  --color-success-border: #10b981;
-  
-  --color-warning-bg: #78350f;
-  --color-warning-text: #fef3c7;
-  --color-warning-border: #f59e0b;
-  
-  --color-error-bg: #7f1d1d;
-  --color-error-text: #fecaca;
-  --color-error-border: #ef4444;
-  
-  --color-info-bg: #1e3a8a;
-  --color-info-text: #dbeafe;
-  --color-info-border: #3b82f6;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-text-disabled: #9ca3af;
+
+  --color-border-primary: #e5e7eb;
+  --color-border-secondary: #d1d5db;
+  --color-border-accent: var(--color-primary-200);
+
+  /* Semantic states */
+  --color-success-bg: #dcfce7;
+  --color-success-text: #16a34a;
+  --color-success-border: #86efac;
+
+  --color-warning-bg: #fffbeb;
+  --color-warning-text: #92400e;
+  --color-warning-border: #fde68a;
+
+  --color-error-bg: #fef2f2;
+  --color-error-text: #991b1b;
+  --color-error-border: #fecaca;
+
+  --color-info-bg: #eff6ff;
+  --color-info-text: #3b82f6;
+  --color-info-border: #60a5fa;
+
+  /* Solar-specific accents (kept for charts/labels) */
+  --color-solar-energy: #d97706; /* amber */
+  --color-solar-online: #16a34a; /* green */
+  --color-solar-offline: #9ca3af; /* gray */
+  --color-solar-alarm: #991b1b; /* red */
+  --color-solar-grid: #3b82f6; /* blue */
+  --color-solar-battery: #8b5cf6; /* purple */
 
   /* Spacing */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem;  /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem;    /* 16px */
+  --space-5: 1.25rem; /* 20px */
+  --space-6: 1.5rem;  /* 24px */
+  --space-8: 2rem;    /* 32px */
 
   /* Typography */
-  --font-family-sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-family-mono: 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
+  --font-family-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.08);
+  --shadow-md: 0 8px 20px rgba(0,0,0,0.10);
+  --shadow-lg: 0 32px 80px rgba(0,0,0,0.22);
 
   /* Border Radius */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  --radius-sm: 0.5rem;   /* 8px */
+  --radius-md: 0.75rem;  /* 12px */
+  --radius-lg: 1rem;     /* 16px */
+  --radius-xl: 1.25rem;  /* 20px */
+  --radius-xxl: 2.25rem; /* 36px */
 
   /* Transitions */
   --transition-fast: 0.15s ease-in-out;
@@ -104,12 +109,15 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  display: flex;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Typography */
 .text-h1 {
   font-size: 1.875rem;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.025em;
   line-height: 1.2;
   color: var(--color-text-primary);
@@ -117,7 +125,7 @@ body {
 
 .text-h2 {
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: -0.025em;
   line-height: 1.3;
   color: var(--color-text-primary);
@@ -125,14 +133,14 @@ body {
 
 .text-h3 {
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.4;
   color: var(--color-text-primary);
 }
 
 .text-h4 {
   font-size: 1.125rem;
-  font-weight: 500;
+  font-weight: 700;
   line-height: 1.4;
   color: var(--color-text-primary);
 }
@@ -153,14 +161,14 @@ body {
 
 .text-caption {
   font-size: 0.75rem;
-  font-weight: 400;
+  font-weight: 600;
   color: var(--color-text-muted);
 }
 
 .text-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0.025em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--color-text-secondary);
 }
@@ -168,9 +176,12 @@ body {
 /* Layout */
 .container {
   width: 100%;
-  max-width: 1280px;
+  max-width: 430px;
   margin: 0 auto;
   padding: 0 var(--space-4);
+  background: var(--color-app-bg);
+  min-height: 100vh;
+  padding-bottom: calc(80px + var(--space-4));
 }
 
 .screen-padding {
@@ -190,12 +201,12 @@ body {
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   font-size: 0.875rem;
-  font-weight: 500;
-  border-radius: var(--radius-md);
+  font-weight: 700;
+  border-radius: 14px;
   border: none;
   cursor: pointer;
   text-decoration: none;
-  transition: all var(--transition-fast);
+  transition: none; /* Eternalgy v2: no transitions */
   min-height: 44px;
   user-select: none;
 }
@@ -212,8 +223,6 @@ body {
 
 .btn-primary:hover:not(:disabled) {
   background-color: var(--color-primary-600);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
 }
 
 .btn-primary:active {
@@ -221,13 +230,14 @@ body {
 }
 
 .btn-secondary {
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border-primary);
+  background-color: #ffffff;
+  color: var(--color-text-secondary);
+  border: 2px solid var(--color-border-primary);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: var(--color-border-secondary);
+  border-color: var(--color-border-secondary);
+  color: var(--color-text-primary);
 }
 
 .btn-ghost {
@@ -236,8 +246,7 @@ body {
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background-color: var(--color-bg-secondary);
-  color: var(--color-text-primary);
+  background-color: rgba(255,255,255,0.6);
 }
 
 .btn-danger {
@@ -265,24 +274,22 @@ body {
 /* Cards */
 .card {
   background-color: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-primary);
-  padding: var(--space-4);
-  box-shadow: var(--shadow-sm);
+  border-radius: 16px;
+  border: 1px solid #f3f4f6;
+  padding: 18px 16px;
+  box-shadow: none;
 }
 
 .card-elevated {
-  box-shadow: var(--shadow-md);
+  box-shadow: none;
 }
 
 .card-interactive {
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: none; /* Eternalgy v2: no transitions */
 }
 
 .card-interactive:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
   border-color: var(--color-border-secondary);
 }
 
@@ -307,10 +314,12 @@ body {
 .bottom-nav {
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: var(--color-bg-secondary);
-  border-top: 1px solid var(--color-border-primary);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  background-color: var(--color-navbar-bg);
+  border-top: 1px solid rgba(255,255,255,0.08);
   padding: var(--space-3) 0;
   padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0));
   display: flex;
@@ -326,7 +335,7 @@ body {
   gap: var(--space-1);
   padding: var(--space-2);
   min-width: 44px;
-  color: var(--color-text-muted);
+  color: rgba(255,255,255,0.62);
   text-decoration: none;
   font-size: 0.75rem;
   transition: color var(--transition-fast);
@@ -334,7 +343,7 @@ body {
 
 .nav-item:hover,
 .nav-item-active {
-  color: var(--color-primary-500);
+  color: var(--color-primary-200);
 }
 
 .nav-icon {
@@ -346,8 +355,10 @@ body {
 .header {
   position: sticky;
   top: 0;
-  background-color: var(--color-bg-primary);
-  border-bottom: 1px solid var(--color-border-primary);
+  width: 100%;
+  max-width: 430px;
+  background-color: var(--color-navbar-bg);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
   padding: var(--space-4);
   padding-top: calc(var(--space-4) + env(safe-area-inset-top, 0));
   display: flex;
@@ -358,8 +369,8 @@ body {
 
 .header-title {
   font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
+  font-weight: 800;
+  color: #ffffff;
 }
 
 /* Forms */
@@ -370,17 +381,19 @@ body {
 .form-label {
   display: block;
   margin-bottom: var(--space-2);
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--color-text-secondary);
 }
 
 .form-input {
   width: 100%;
   padding: var(--space-3) var(--space-4);
-  background-color: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border-primary);
-  border-radius: var(--radius-md);
+  background-color: #ffffff;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: 12px;
   color: var(--color-text-primary);
   font-size: 1rem;
   min-height: 44px;
@@ -390,7 +403,7 @@ body {
 .form-input:focus {
   outline: none;
   border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
 }
 
 .form-input::placeholder {
@@ -403,47 +416,51 @@ body {
   align-items: center;
   padding: var(--space-1) var(--space-3);
   border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.05em;
 }
 
 .badge-online {
   background-color: var(--color-success-bg);
   color: var(--color-success-text);
+  border: 1px solid var(--color-success-border);
 }
 
 .badge-offline {
-  background-color: #374151;
-  color: #9ca3af;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-primary);
 }
 
 .badge-alarm {
   background-color: var(--color-error-bg);
   color: var(--color-error-text);
+  border: 1px solid var(--color-error-border);
 }
 
 .badge-warning {
   background-color: var(--color-warning-bg);
   color: var(--color-warning-text);
+  border: 1px solid var(--color-warning-border);
 }
 
 /* Solar Components */
 .energy-meter {
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
+  background-color: #ffffff;
+  border-radius: 16px;
   padding: var(--space-6);
   text-align: center;
-  border: 1px solid var(--color-border-primary);
+  border: 1px solid #f3f4f6;
 }
 
 .energy-value {
   font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-solar-energy);
+  font-weight: 800;
+  color: var(--color-text-primary);
   margin-bottom: var(--space-2);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-sans);
 }
 
 .energy-label {
@@ -451,6 +468,7 @@ body {
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  font-weight: 600;
 }
 
 .device-card {
@@ -489,6 +507,13 @@ body {
 }
 
 /* Utilities */
+.text-center { text-align: center; }
+.text-muted { color: var(--color-text-muted); }
+.text-error { color: var(--color-error-text); }
+.btn-block { width: 100%; }
+.mt-4 { margin-top: var(--space-4); }
+.space-y-3 > * + * { margin-top: var(--space-3); }
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -546,6 +571,17 @@ body {
   
   .grid-cols-md-2 { grid-template-columns: repeat(2, 1fr); }
   .grid-cols-md-3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Desktop "phone frame" */
+@media (min-width: 500px) {
+  body { padding: 28px 0; }
+  .header { border-radius: var(--radius-xxl) var(--radius-xxl) 0 0; }
+  .container {
+    border-radius: 0 0 var(--radius-xxl) var(--radius-xxl);
+    box-shadow: var(--shadow-lg);
+  }
+  .bottom-nav { border-radius: 0 0 var(--radius-xxl) var(--radius-xxl); }
 }
 
 @media (min-width: 1024px) {

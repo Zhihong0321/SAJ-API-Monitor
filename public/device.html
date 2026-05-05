@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#0d1f0f">
   <title>Device Details - SAJ Solar Monitor</title>
   <link rel="stylesheet" href="/design-system/styles.css">
   <style>
@@ -664,21 +664,20 @@
         }
 
         let chartHTML = `
-          <div style="padding: 20px; background: #1e293b; border-radius: 12px; margin: 8px 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-            <div style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px; text-align: center; font-weight: 500;">
+          <div style="padding: 16px; background: var(--color-bg-secondary); border-radius: 16px; margin: 8px 0; border: 1px solid var(--color-border-primary);">
+            <div style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 16px; text-align: center; font-weight: 600;">
               ${title} (${dataPoints.length} data points)
             </div>
             
             <!-- SVG Chart Container -->
-            <div style="position: relative; height: ${chartHeight}px; margin-bottom: 20px; background: #0f172a; border-radius: 8px; padding: 16px;">
+            <div style="position: relative; height: ${chartHeight}px; margin-bottom: 16px; background: var(--color-bg-tertiary); border-radius: 12px; padding: 16px; border: 1px solid var(--color-border-primary);">
               <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="overflow: visible; display: block;">
                 <!-- Grid lines (optional) -->
                 <defs>
                   <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style="stop-color:#2563eb;stop-opacity:0.9" />
-                    <stop offset="25%" style="stop-color:#3b82f6;stop-opacity:0.6" />
-                    <stop offset="75%" style="stop-color:#1e40af;stop-opacity:0.3" />
-                    <stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:0.1" />
+                    <stop offset="0%" style="stop-color:var(--color-primary-500);stop-opacity:0.55" />
+                    <stop offset="45%" style="stop-color:var(--color-primary-200);stop-opacity:0.25" />
+                    <stop offset="100%" style="stop-color:var(--color-primary-500);stop-opacity:0.08" />
                   </linearGradient>
                 </defs>
                 
@@ -686,11 +685,11 @@
                 ${areaPath ? `<path d="${areaPath}" fill="url(#areaGradient)" />` : ''}
                 
                 <!-- Line stroke -->
-                ${pathData ? `<path d="${pathData}" fill="none" stroke="#2563eb" stroke-width="1" />` : ''}
+                ${pathData ? `<path d="${pathData}" fill="none" stroke="var(--color-primary-500)" stroke-width="1" />` : ''}
                 
                 <!-- Data points (dots) -->
                 ${points.map(point => `
-                  <circle cx="${point.x}" cy="${point.y}" r="0.4" fill="#2563eb" opacity="0.9">
+                  <circle cx="${point.x}" cy="${point.y}" r="0.4" fill="var(--color-primary-500)" opacity="0.9">
                     <title>${point.time}: ${point.power.toFixed(0)}W</title>
                   </circle>
                 `).join('')}
@@ -699,7 +698,7 @@
               <!-- Time labels -->
               <div style="position: absolute; bottom: -25px; left: 16px; right: 16px; display: flex; justify-content: space-between;">
                 ${points.filter(point => point.hour % 3 === 0 && point.hour % 1 === 0).map(point => `
-                  <span style="font-size: 10px; color: #64748b; text-align: center; min-width: 30px;">
+                  <span style="font-size: 10px; color: var(--color-text-muted); text-align: center; min-width: 30px;">
                     ${Math.floor(point.hour).toString().padStart(2, '0')}:00
                   </span>
                 `).join('')}
@@ -708,25 +707,25 @@
             
             <!-- Chart Summary -->
             <div style="
-              border-top: 1px solid #334155; 
-              padding-top: 16px; 
-              font-size: 13px; 
-              color: #cbd5e1;
+              border-top: 1px solid var(--color-border-primary); 
+              padding-top: 12px; 
+              font-size: 12px; 
+              color: var(--color-text-secondary);
               display: flex;
               justify-content: space-between;
               flex-wrap: wrap;
               gap: 12px;
             ">
               <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 8px; height: 8px; background: #2563eb; border-radius: 50%;"></div>
+                <div style="width: 8px; height: 8px; background: var(--color-primary-500); border-radius: 50%;"></div>
                 <span><strong>Peak:</strong> ${maxPower.toFixed(0)}W</span>
               </div>
               <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%;"></div>
+                <div style="width: 8px; height: 8px; background: var(--color-primary-200); border-radius: 50%;"></div>
                 <span><strong>Avg:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.totalPVPower) || 0), 0) / dataPoints.length).toFixed(0)}W</span>
               </div>
               <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 8px; height: 8px; background: #1e40af; border-radius: 50%;"></div>
+                <div style="width: 8px; height: 8px; background: var(--color-solar-energy); border-radius: 50%;"></div>
                 <span><strong>Energy:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.todayPvEnergy) || 0), 0)).toFixed(2)}kWh</span>
               </div>
             </div>
@@ -841,27 +840,26 @@
         }
 
         let chartHTML = `
-          <div style="padding: 20px; background: #1e293b; border-radius: 12px; margin: 8px 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-            <div style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px; text-align: center; font-weight: 500;">
+          <div style="padding: 16px; background: var(--color-bg-secondary); border-radius: 16px; margin: 8px 0; border: 1px solid var(--color-border-primary);">
+            <div style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 16px; text-align: center; font-weight: 600;">
               ${title} (${dataPoints.length} data points)
             </div>
 
-            <div style="position: relative; height: ${chartHeight}px; margin-bottom: 20px; background: #0f172a; border-radius: 8px; padding: 16px;">
+            <div style="position: relative; height: ${chartHeight}px; margin-bottom: 16px; background: var(--color-bg-tertiary); border-radius: 12px; padding: 16px; border: 1px solid var(--color-border-primary);">
               <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="overflow: visible; display: block;">
                 <defs>
                   <linearGradient id="hourlyAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style="stop-color:#2563eb;stop-opacity:0.9" />
-                    <stop offset="25%" style="stop-color:#3b82f6;stop-opacity:0.6" />
-                    <stop offset="75%" style="stop-color:#1e40af;stop-opacity:0.3" />
-                    <stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:0.1" />
+                    <stop offset="0%" style="stop-color:var(--color-primary-500);stop-opacity:0.55" />
+                    <stop offset="45%" style="stop-color:var(--color-primary-200);stop-opacity:0.25" />
+                    <stop offset="100%" style="stop-color:var(--color-primary-500);stop-opacity:0.08" />
                   </linearGradient>
                 </defs>
 
                 <path d="${areaPath}" fill="url(#hourlyAreaGradient)" />
-                <path d="${pathData}" fill="none" stroke="#2563eb" stroke-width="1" />
+                <path d="${pathData}" fill="none" stroke="var(--color-primary-500)" stroke-width="1" />
 
                 ${points.map(point => `
-                  <circle cx="${point.x}" cy="${point.y}" r="0.4" fill="#2563eb" opacity="0.9">
+                  <circle cx="${point.x}" cy="${point.y}" r="0.4" fill="var(--color-primary-500)" opacity="0.9">
                     <title>${point.time}: ${point.power.toFixed(0)}W</title>
                   </circle>
                 `).join('')}
@@ -869,24 +867,24 @@
 
               <div style="position: absolute; bottom: -25px; left: 16px; right: 16px; display: flex; justify-content: space-between;">
                 ${points.filter(point => point.hour % 3 === 0).map(point => `
-                  <span style="font-size: 10px; color: #64748b; text-align: center; min-width: 30px;">
+                  <span style="font-size: 10px; color: var(--color-text-muted); text-align: center; min-width: 30px;">
                     ${Math.floor(point.hour).toString().padStart(2, '0')}:00
                   </span>
                 `).join('')}
               </div>
             </div>
 
-            <div style="border-top: 1px solid #334155; padding-top: 16px; font-size: 13px; color: #cbd5e1; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div style="border-top: 1px solid var(--color-border-primary); padding-top: 12px; font-size: 12px; color: var(--color-text-secondary); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
               <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 8px; height: 8px; background: #2563eb; border-radius: 50%;"></div>
+                <div style="width: 8px; height: 8px; background: var(--color-primary-500); border-radius: 50%;"></div>
                 <span><strong>Peak:</strong> ${maxPower.toFixed(0)}W</span>
               </div>
               <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%;"></div>
+                <div style="width: 8px; height: 8px; background: var(--color-primary-200); border-radius: 50%;"></div>
                 <span><strong>Avg:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.totalPVPower) || 0), 0) / dataPoints.length).toFixed(0)}W</span>
               </div>
               <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 8px; height: 8px; background: #1e40af; border-radius: 50%;"></div>
+                <div style="width: 8px; height: 8px; background: var(--color-solar-energy); border-radius: 50%;"></div>
                 <span><strong>Energy:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.todayPvEnergy) || 0), 0)).toFixed(2)}kWh</span>
               </div>
             </div>
@@ -976,27 +974,26 @@
         }
 
         let chartHTML = `
-          <div style="padding: 20px; background: #1e293b; border-radius: 12px; margin: 8px 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-            <div style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px; text-align: center; font-weight: 500;">
+          <div style="padding: 16px; background: var(--color-bg-secondary); border-radius: 16px; margin: 8px 0; border: 1px solid var(--color-border-primary);">
+            <div style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 16px; text-align: center; font-weight: 600;">
               ${title} (${dataPoints.length} data points)
             </div>
 
-            <div style="position: relative; height: ${chartHeight}px; margin-bottom: 20px; background: #0f172a; border-radius: 8px; padding: 16px;">
+            <div style="position: relative; height: ${chartHeight}px; margin-bottom: 16px; background: var(--color-bg-tertiary); border-radius: 12px; padding: 16px; border: 1px solid var(--color-border-primary);">
               <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="overflow: visible; display: block;">
                 <defs>
                   <linearGradient id="dailyAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.9" />
-                    <stop offset="25%" style="stop-color:#34d399;stop-opacity:0.6" />
-                    <stop offset="75%" style="stop-color:#059669;stop-opacity:0.3" />
-                    <stop offset="100%" style="stop-color:#047857;stop-opacity:0.1" />
+                    <stop offset="0%" style="stop-color:var(--color-primary-500);stop-opacity:0.55" />
+                    <stop offset="45%" style="stop-color:var(--color-primary-200);stop-opacity:0.25" />
+                    <stop offset="100%" style="stop-color:var(--color-primary-500);stop-opacity:0.08" />
                   </linearGradient>
                 </defs>
 
                 <path d="${areaPath}" fill="url(#dailyAreaGradient)" />
-                <path d="${pathData}" fill="none" stroke="#10b981" stroke-width="1" />
+                <path d="${pathData}" fill="none" stroke="var(--color-primary-500)" stroke-width="1" />
 
                 ${points.map(point => `
-                  <circle cx="${point.x}" cy="${point.y}" r="0.4" fill="#10b981" opacity="0.9">
+                  <circle cx="${point.x}" cy="${point.y}" r="0.4" fill="var(--color-primary-500)" opacity="0.9">
                     <title>${point.date}: ${point.energy.toFixed(2)}kWh</title>
                   </circle>
                 `).join('')}
@@ -1004,24 +1001,24 @@
 
               <div style="position: absolute; bottom: -25px; left: 16px; right: 16px; display: flex; justify-content: space-between;">
                 ${points.filter((point, index) => index % Math.ceil(points.length / 5) === 0).map(point => `
-                  <span style="font-size: 10px; color: #64748b; text-align: center; min-width: 40px;">
+                  <span style="font-size: 10px; color: var(--color-text-muted); text-align: center; min-width: 40px;">
                     ${point.date.split('/')[1]}/${point.date.split('/')[0]}
                   </span>
                 `).join('')}
               </div>
             </div>
 
-            <div style="border-top: 1px solid #334155; padding-top: 16px; font-size: 13px; color: #cbd5e1; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div style="border-top: 1px solid var(--color-border-primary); padding-top: 12px; font-size: 12px; color: var(--color-text-secondary); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
               <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
+                <div style="width: 8px; height: 8px; background: var(--color-primary-500); border-radius: 50%;"></div>
                 <span><strong>Peak:</strong> ${maxEnergy.toFixed(2)}kWh</span>
               </div>
               <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 8px; height: 8px; background: #34d399; border-radius: 50%;"></div>
+                <div style="width: 8px; height: 8px; background: var(--color-primary-200); border-radius: 50%;"></div>
                 <span><strong>Avg:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.todayPvEnergy) || 0), 0) / dataPoints.length).toFixed(2)}kWh</span>
               </div>
               <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 8px; height: 8px; background: #059669; border-radius: 50%;"></div>
+                <div style="width: 8px; height: 8px; background: var(--color-solar-energy); border-radius: 50%;"></div>
                 <span><strong>Total:</strong> ${(dataPoints.reduce((sum, d) => sum + (parseFloat(d.todayPvEnergy) || 0), 0)).toFixed(2)}kWh</span>
               </div>
             </div>
