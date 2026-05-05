@@ -110,7 +110,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   display: flex;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -576,10 +578,13 @@ body {
 /* Desktop "phone frame" */
 @media (min-width: 500px) {
   body { padding: 28px 0; }
-  .header { border-radius: var(--radius-xxl) var(--radius-xxl) 0 0; }
+  .header {
+    border-radius: var(--radius-xxl) var(--radius-xxl) 0 0;
+    box-shadow: var(--shadow-lg);
+  }
   .container {
     border-radius: 0 0 var(--radius-xxl) var(--radius-xxl);
-    box-shadow: var(--shadow-lg);
+    box-shadow: none;
   }
   .bottom-nav { border-radius: 0 0 var(--radius-xxl) var(--radius-xxl); }
 }
